@@ -1,16 +1,13 @@
-import requests
+import sys
+import os
 import time
-from pprint import pprint
-import json
-
-import constants as c
 
 from helpers import *
 
-def run():
+def run(url_id):
 
-    # Hardcoded url for now, will be changed later
-    url = 'https://openapi.tidal.com/albums/311501062?countryCode=US'
+    # Construct the full URL based on the provided ID
+    url = f'https://openapi.tidal.com/albums/{url_id}?countryCode=US'
 
     # Get artist and album name, duration and release date
     album_data = get_release_information(url)
@@ -52,7 +49,7 @@ def run():
     time.sleep(1)
 
     # Grab tracklist
-    tracks_url = 'https://openapi.tidal.com/albums/311501062/items?countryCode=US&offset=0&limit=10'
+    tracks_url = f'https://openapi.tidal.com/albums/{url_id}/items?countryCode=US&offset=0&limit=10'
 
     tracklist = get_tracklist(tracks_url)
 
@@ -104,4 +101,9 @@ def run():
                 f.write('* ' + artist_str + ' - ' + instruments_str + '\n')
 
 if __name__ == '__main__':
-    run()
+    if len(sys.argv) != 2:
+        print("Usage: python script.py <album_id>")
+        sys.exit(1)
+    
+    album_id = sys.argv[1]
+    run(album_id)
