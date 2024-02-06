@@ -1,0 +1,27 @@
+{{Musiikkialbumi
+ | levy              = 
+ | tyyppi            = 
+ | kansi             = 
+ | artisti           = 
+ | a-puoli           = 
+ | b-puoli           = 
+ | julkaistu         = 
+ | formaatti         = 
+ | tuottaja          = 
+ | nauhoitettu       = 
+ | genre             = 
+ | minuutit          = 
+ | sekunnit          = 
+ | levy-yhtiö        = 
+ | muut kannet       = 
+ | listasijoitukset  = 
+ | piilota julkaisut = 
+ | artistin          = 
+ | tarkkatyyppi      = 
+ | vuosit            = 
+ | edellinen         = 
+ | vuosie            =  
+ | seuraava          = 
+ | vuosis            = 
+
+}}

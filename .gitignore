@@ -1,2 +1,5 @@
 venv/
 secret.cfg
+albums/*
+!albums/.gitkeep
+__pycache__/
