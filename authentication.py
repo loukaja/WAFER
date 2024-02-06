@@ -1,10 +1,7 @@
 import requests
 import base64
 import configparser
-
-# Set the API endpoint URL and grant_type parameter
-URL = 'https://auth.tidal.com/v1/oauth2/token'
-PARAMS = {'grant_type': 'client_credentials'}
+import constants as c
 
 def get_access_token():
 
@@ -25,7 +22,7 @@ def get_access_token():
     }
 
     # Send a POST request to the API endpoint with the headers and parameters
-    response = requests.post(URL, headers=headers, data=PARAMS)
+    response = requests.post(c.URL, headers=headers, data=c.PARAMS)
 
     # If the response is successful, get the access token from the response content
     if response.status_code == 200:
