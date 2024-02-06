@@ -62,9 +62,11 @@ def run(url_id):
     # Then the actual tracks one by one
     for track in tracklist:
         with open(file, 'a', encoding='utf-8') as fd:
+            # Format the track duration string with leading zero for single-digit seconds
+            track_duration = f'{track["track_minutes"]}.{track["track_seconds"]:02d}'
             fd.write(f'\n | nimi{track["track_number"]}           = {track["track_title"]}')
             fd.write(f'\n | huom{track["track_number"]}           = ')
-            fd.write(f'\n | pituus{track["track_number"]}         = {track["track_minutes"]}.{track["track_seconds"]}')
+            fd.write(f'\n | pituus{track["track_number"]}         = {track_duration}')
             fd.write('\n')
 
     # Add closing curly braces for the tracklist part of the template
