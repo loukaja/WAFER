@@ -4,13 +4,14 @@ import time
 
 from helpers import *
 
-def run(url_id):
+def run(album_link):
 
-    # Construct the full URL based on the provided ID
-    url = f'https://openapi.tidal.com/albums/{url_id}?countryCode=US'
-
-    # Get artist and album name, duration and release date
-    album_data = get_release_information(url)
+    # Grab the ID from the album link
+    url_id = album_link.split('/')[-1]
+    
+    # Get artist and album name, duration, release date and previous album title and release date
+    album_data = get_release_information(url_id)
+    previous_album = get_previous_album(album_data)
 
     # Create new file from template
     file = construct_path(album_data['artist'], album_data['album_title'])
@@ -27,6 +28,8 @@ def run(url_id):
         ' | julkaistu         = ',
         ' | minuutit          = ',
         ' | sekunnit          = ',
+        ' | edellinen         = ',
+        ' | vuosie            = ',
     ]
 
     new_content = [
@@ -35,11 +38,16 @@ def run(url_id):
         album_data['full_date'],
         str(album_data['total_min']),
         str(album_data['total_sec']),
+        previous_album['title'] if previous_album else '',
+        previous_album['year'] if previous_album else ''
     ]
 
     # Loop through each line, replace with the new content, and update the contents variable
     for i, line_to_modify in enumerate(lines_to_modify):
-        contents = contents.replace(line_to_modify, f'{line_to_modify}{new_content[i]}')
+        if 'artisti' in line_to_modify or 'edellinen' in line_to_modify:
+            contents = contents.replace(line_to_modify, f'{line_to_modify}[[{new_content[i]}]]')
+        else:
+            contents = contents.replace(line_to_modify, f'{line_to_modify}{new_content[i]}')
 
     # Write the modified contents back to the file
     with open(file, 'w', encoding='utf-8') as f:
@@ -102,10 +110,12 @@ def run(url_id):
                     instruments_str = instruments_str[:-2]
                 f.write('* ' + artist_str + ' - ' + instruments_str + '\n')
 
+    
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print("Usage: python script.py <album_id>")
+        print("Usage: python script.py https://tidal.com/browse/album/<album_id>")
         sys.exit(1)
     
-    album_id = sys.argv[1]
-    run(album_id)
+    album_link = sys.argv[1]
+    run(album_link)

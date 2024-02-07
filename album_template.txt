@@ -20,7 +20,7 @@
  | tarkkatyyppi      = 
  | vuosit            = 
  | edellinen         = 
- | vuosie            =  
+ | vuosie            = 
  | seuraava          = 
  | vuosis            = 
 
