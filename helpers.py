@@ -1,9 +1,11 @@
-import requests
-import shutil
-import os.path
+"""Module that hosts various helper function
+"""
+
 import os
+import os.path
 import sys
-from datetime import datetime
+import shutil
+import requests
 
 import constants as c
 from authentication import get_access_token
@@ -11,6 +13,12 @@ from authentication import get_access_token
 
 
 def build_headers():
+    """Helper function to build headers
+
+    Returns:
+        dict: header
+    """
+
     access_token = get_access_token()
 
     if access_token['expires_in'] > 0:
@@ -19,72 +27,108 @@ def build_headers():
     headers = { 'accept': 'application/vnd.tidal.v1+json',
             'Authorization': authorization,
             'Content-Type': 'application/vnd.tidal.v1+json'}
-    
+
     return headers
 
 def get_release_information(url_id):
+    """Function that fetches album information
+
+    Args:
+        url_id (string): The last numerical part of tidals album browse URL
+
+    Returns:
+        dict: A dictionary with album title, release date, artist, artist ID and running time
+    """
 
     headers = build_headers()
 
     # Construct the full URL based on the provided ID
     url = f'https://openapi.tidal.com/albums/{url_id}?countryCode=US'
 
-    r = requests.get(url=url, headers=headers)
-    
-    if r.status_code == 451:
-        sys.exit(f'{r.status_code}: Unavailable due to demand from the right-holders to prohibit access to the resource.')
+    try:
+        response = requests.get(url=url, headers=headers, timeout=(3,5))
 
-    if r.status_code == 404:
-        sys.exit(f'{r.status_code}: The requested resource {url} could not be found')
+        if response.status_code == 451:
+            sys.exit(f'{response.status_code}: Unavailable due to demand from the right-holders to \
+                      prohibit access to the resource.')
 
-    if r.status_code == 200:
-        jsonResponse = r.json()
+        if response.status_code == 404:
+            sys.exit(f'{response.status_code}: The requested resource {url} could not be found')
 
-        day = jsonResponse['resource']['releaseDate'].split('-')[2]
-        month = jsonResponse['resource']['releaseDate'].split('-')[1]
-        year = jsonResponse['resource']['releaseDate'].split('-')[0]
+        if response.status_code == 200:
+            json_response = response.json()
 
-        album_data = {}
+            day = json_response['resource']['releaseDate'].split('-')[2]
+            month = json_response['resource']['releaseDate'].split('-')[1]
+            year = json_response['resource']['releaseDate'].split('-')[0]
 
-        album_data['album_title'] = jsonResponse['resource']['title']
-        album_data['release_date'] = jsonResponse['resource']['releaseDate']
-        album_data['artist'] = jsonResponse['resource']['artists'][0]['name']
-        album_data['artist_id'] = jsonResponse['resource']['artists'][0]['id']
+            album_data = {}
 
-        album_data['full_date'] = str(day) + ". " + c.KK[int(month)-1] + " " + str(year)
-        album_data['total_min'], album_data['total_sec'] = divmod(jsonResponse['resource']['duration'], 60)
+            album_data['album_title'] = json_response['resource']['title']
+            album_data['artist'] = json_response['resource']['artists'][0]['name']
+            album_data['artist_id'] = json_response['resource']['artists'][0]['id']
 
-        return album_data
-    else:
-        sys.exit(f'{r.status_code}: Something went wrong, please try again later')
+            album_data['full_date'] = str(day) + ". " + c.KK[int(month)-1] + " " + str(year)
+            album_data['total_min'], album_data['total_sec'] = \
+                  divmod(json_response['resource']['duration'], 60)
+
+            return album_data
+
+        sys.exit(f'{response.status_code}: Something went wrong, please try again later')
+    except requests.exceptions.Timeout:
+        sys.exit("The request timed out")
+    except requests.exceptions.RequestException as e:
+        sys.exit("An error occurred:", e)
 
 def get_tracklist(tracks_url):
+    """Function that generates album tracklist
+
+    Args:
+        tracks_url (string): Tidal album ID
+
+    Returns:
+        list: A list of dictionaries of tracks holding track number, title, minutes and seconds
+    """
 
     headers = build_headers()
 
-    r = requests.get(url=tracks_url, headers=headers)
-    jsonResponse = r.json()
+    try:
+        response = requests.get(url=tracks_url, headers=headers, timeout=(3, 5))
+        json_response = response.json()
 
-    tracklist = []
+        tracklist = []
 
-    for i in jsonResponse['data']:
-        track_num = i['resource']['trackNumber']
-        title = i['resource']['title']
-        duration = i['resource']['duration']
-        minutes, seconds = divmod(duration, 60)
+        for i in json_response['data']:
+            track_num = i['resource']['trackNumber']
+            title = i['resource']['title']
+            duration = i['resource']['duration']
+            minutes, seconds = divmod(duration, 60)
 
-        track = {
-            "track_number": track_num,
-            "track_title": title,
-            "track_minutes": minutes,
-            "track_seconds": seconds
-        }
+            track = {
+                "track_number": track_num,
+                "track_title": title,
+                "track_minutes": minutes,
+                "track_seconds": seconds
+            }
 
-        tracklist.append(track)
+            tracklist.append(track)
 
-    return tracklist
+        return tracklist
+    except requests.exceptions.Timeout:
+        sys.exit("The request timed out")
+    except requests.exceptions.RequestException as e:
+        sys.exit("An error occurred:", e)
 
 def construct_path(artist, title):
+    """Function that creates the output file
+
+    Args:
+        artist (string): Name of the artist
+        title (string): Name of the album
+
+    Returns:
+        string: A path to the file the function created
+    """
 
     # Define the directory path
     directory = './albums/'
@@ -101,7 +145,7 @@ def construct_path(artist, title):
         try:
             os.remove(path)
         except OSError as e:
-            print("Error: %s - %s." % (e.filename, e.strerror))
+            print(f'Error: {e.filename} - {e.strerror}.')
 
     # Then start from scratch by copying the template file
     if not os.path.isfile(path):
@@ -110,44 +154,59 @@ def construct_path(artist, title):
     return path
 
 def get_all_artist_albums(artist_id):
+    """Function to get all albums by artist
+
+    Args:
+        artist_id (string): Tidal ID of the artist
+
+    Returns:
+        list: A list of dictionaries of artists' albums, with title and release date
+    """
 
     headers = build_headers()
 
-    # Get all full length albums of artist /artists/{artistId}/albums
-
-    #artist_id = 24906
-    #5436738
-
     url = f'https://openapi.tidal.com/artists/{artist_id}/albums?countryCode=US&limit=50'
 
-    r = requests.get(url=url, headers=headers)
+    try:
+        response = requests.get(url=url, headers=headers, timeout=(3,5))
 
-    jsonResponse = r.json()
+        json_response = response.json()
 
-    all_albums = []
+        all_albums = []
 
-    for i in jsonResponse['data']:
-        if i['status'] == 451:
-            album = {
-                "title": "Not available",
-                "release_date": "Not available"
-            }
-            all_albums.append(album)
-        else:
-            if i['resource']['type'] == 'ALBUM':
+        for i in json_response['data']:
+            if i['status'] == 451:
                 album = {
-                    "title": i['resource']['title'],
-                    "release_date": i['resource']['releaseDate']
+                    "title": "Not available",
+                    "release_date": "Not available"
                 }
-                
                 all_albums.append(album)
-    
-    # Sort the albums in release order before returning them
-    #all_albums.sort(key=lambda x: x['release_date'], reverse=True)
-    
-    return all_albums
+            else:
+                if i['resource']['type'] == 'ALBUM':
+                    album = {
+                        "title": i['resource']['title'],
+                        "release_date": i['resource']['releaseDate']
+                    }
+
+                    all_albums.append(album)
+
+        return all_albums
+    except requests.exceptions.Timeout:
+        sys.exit("The request timed out")
+    except requests.exceptions.RequestException as e:
+        sys.exit("An error occurred:", e)
 
 def get_previous_album(current_album):
+    """Function to get previous album information
+
+    Args:
+        current_album (dict): The album initially searched for
+
+    Returns:
+        dict: If available, returns a dict with the title and release date of the previous album.
+       If not, returns None 
+    """
+
     all_albums = get_all_artist_albums(current_album['artist_id'])
 
     current_album_index = None
@@ -175,17 +234,27 @@ def get_previous_album(current_album):
         if release_date_str:
             if album['title'] == current_album['album_title']:
                 continue
-            else:
-                previous_album = {
-                    "title": album['title'],
-                    "year": release_date_str.split('-')[0]  # Use release date string directly if datetime parsing fails
-                }
-                return previous_album
+
+            previous_album = {
+                "title": album['title'],
+                # Use release date string directly if datetime parsing fails
+                "year": release_date_str.split('-')[0]
+            }
+            return previous_album
 
     # Return None if no previous album is found
     return None
 
 def fill_album_info_box(url_id):
+    """Function that writes the information to the created file
+
+    Args:
+        url_id (string): The last part of the Tidal browse album URL
+
+    Returns:
+        list: A list with the file path and the album data
+    """
+
     # Get artist and album name, duration, release date and previous album title and release date
     album_data = get_release_information(url_id)
     previous_album = get_previous_album(album_data)
@@ -232,14 +301,21 @@ def fill_album_info_box(url_id):
 
     return [file, album_data]
 
-def fill_tracklist(url_id, list):
+def fill_tracklist(url_id, file_and_album):
+    """Function that writes the track list information to the file
+
+    Args:
+        url_id (string): The last part of the Tidal browse album URL
+        file_and_album (list): File path and album data
+    """
+
     # Grab tracklist
     tracks_url = f'https://openapi.tidal.com/albums/{url_id}/items?countryCode=US&offset=0&limit=30'
 
     tracklist = get_tracklist(tracks_url)
 
-    file = list[0]
-    album_data = list[1]
+    file = file_and_album[0]
+    album_data = file_and_album[1]
 
     # Append the start of the tracklist module to the file
     with open(file, 'a', encoding='utf-8') as f:
@@ -261,23 +337,30 @@ def fill_tracklist(url_id, list):
     with open(file, 'a', encoding='utf-8') as f:
         f.write('}}\n')
 
-def fill_lineup(list):
+def fill_lineup(file_and_album):
+    """Function that writes lineup parts to the output file if available
+
+    Args:
+        file_and_album (list): File path and album data
+    """
+
     # Add lineup parts
-    file = list[0]
+    file = file_and_album[0]
 
     with open(file, 'a', encoding='utf-8') as f:
         f.write('\n== Kokoonpano ==')
 
     # Read lineup from file if it exists, then write the information to template
     # NOTE! This assumes a format of Firstname Lastname - instrument, instrument, instrument
-        
-    # TODO: Figure out a better way to get this information
+
     if os.path.isfile('./lineup.txt'):
         with open('lineup.txt', 'r', encoding='utf-8') as f:
             lineup = [line.strip() for line in f]
 
         # Make lineup a dict
-        band_dict = [{'Artist': artist_instrument[0].strip(), 'Instruments': artist_instrument[1].strip()} for artist_instrument in [artist.split('-') for artist in lineup]]
+        band_dict = [{'Artist': artist_instrument[0].strip(), \
+                      'Instruments': artist_instrument[1].strip()} \
+                        for artist_instrument in [artist.split('-') for artist in lineup]]
 
         with open(list[0], 'a', encoding='utf-8') as f:
             f.write('\n')
