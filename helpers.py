@@ -5,6 +5,7 @@ import os
 import os.path
 import sys
 import shutil
+import re
 import requests
 
 import constants as c
@@ -389,6 +390,9 @@ def add_reviews(reviews, file_and_album):
         with open(file, 'a', encoding='utf-8') as f:
             f.write(r + '\n')
 
+def is_valid_url(review_url):
+    pattern = r'^(http|https):\/\/([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&=]*)?$'
+    return re.match(pattern, review_url) is not None
 
 def get_reviews():
     reviews = []
@@ -399,4 +403,9 @@ def get_reviews():
         if not review_url:
             return reviews
 
-        reviews.append(review_url)
+        if review_url not in reviews and is_valid_url(review_url):
+            reviews.append(review_url)
+        elif review_url in reviews:
+            print("This review URL is already in the list.")
+        else:
+            print("Invalid URL. Please enter a valid URL.")
