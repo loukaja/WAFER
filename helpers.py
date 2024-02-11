@@ -8,9 +8,9 @@ import shutil
 import requests
 
 import constants as c
-from authentication import get_access_token
+from authentication import Authentication
 
-
+access_token = Authentication()
 
 def build_headers():
     """Helper function to build headers
@@ -19,10 +19,13 @@ def build_headers():
         dict: header
     """
 
-    access_token = get_access_token()
-
-    if access_token['expires_in'] > 0:
-        authorization = 'Bearer ' + str(access_token['access_token'])
+    if access_token.expires_in == 0:
+        print("Access token expired, refreshing...")
+        access_token.refresh_access_token()
+    else:
+        print("Access token is valid!")
+        
+    authorization = 'Bearer ' + access_token.access_token
 
     headers = { 'accept': 'application/vnd.tidal.v1+json',
             'Authorization': authorization,
