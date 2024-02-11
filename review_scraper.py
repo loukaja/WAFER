@@ -19,6 +19,8 @@ def get_review(review_url):
             review = get_kaaoszine_review(soup, review_url)
         elif domain == 'www.soundi.fi':
             review = get_soundi_review(soup, review_url)
+        elif domain == 'metalliluola.fi':
+            review = get_metalliluola_review(soup, review_url)
         elif domain == 'blabbermouth.net':
             review = get_blabbermouth_review(soup, review_url)
     except requests.exceptions.Timeout:
@@ -29,7 +31,7 @@ def get_review(review_url):
     return review
 
 def create_album_rating(review):
-    if review['domain'] == 'kaaoszine.fi' or review['domain'] == 'blabbermouth.net':
+    if review['domain'] == 'kaaoszine.fi' or review['domain'] == 'blabbermouth.net' or review['domain'] == 'metalliluola.fi':
         site = review['domain'].split('.')[0].title()
     elif review['domain'] == 'www.soundi.fi':
         site = review['domain'].split('.')[1].title()
@@ -131,6 +133,34 @@ def get_soundi_review(soup, review_url):
             "title": title,
             "author": author_name,
             "date": date_str,
+            "rating": rating,
+            "max_rating": max_rating,
+            "url": review_url,
+            "domain": domain
+        }
+
+    album_rating = create_album_rating(review)
+
+    return album_rating
+
+def get_metalliluola_review(soup, review_url):
+    domain = 'metalliluola.fi'
+
+    title = soup.find('h1').get_text()
+
+    author_div = soup.find('div', class_='td-post-author-name')
+    author_name = author_div.a.get_text()
+
+    date = soup.find('time', class_='entry-date updated td-module-date').get_text()
+
+    rating = soup.find('h3').get_text()
+    rating = rating.split('/')[0].strip()
+    max_rating = 10
+
+    review = {
+            "title": title,
+            "author": author_name,
+            "date": date,
             "rating": rating,
             "max_rating": max_rating,
             "url": review_url,
