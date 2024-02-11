@@ -9,6 +9,7 @@ import requests
 
 import constants as c
 from authentication import Authentication
+from review_scraper import get_review
 
 access_token = Authentication()
 
@@ -20,11 +21,8 @@ def build_headers():
     """
 
     if access_token.expires_in == 0:
-        print("Access token expired, refreshing...")
         access_token.refresh_access_token()
-    else:
-        print("Access token is valid!")
-        
+
     authorization = 'Bearer ' + access_token.access_token
 
     headers = { 'accept': 'application/vnd.tidal.v1+json',
@@ -378,3 +376,27 @@ def fill_lineup(file_and_album):
                         instruments_str = instruments_str + f"[[{instrument}]], "
                     instruments_str = instruments_str[:-2]
                 f.write('* ' + artist_str + ' - ' + instruments_str + '\n')
+
+def add_reviews(reviews, file_and_album):
+    file = file_and_album[0]
+
+    with open(file, 'a', encoding='utf-8') as f:
+        f.write('\n')
+        f.write('== Arvostelut ==\n')
+
+    for review in reviews:
+        r = get_review(review)
+        with open(file, 'a', encoding='utf-8') as f:
+            f.write(r + '\n')
+
+
+def get_reviews():
+    reviews = []
+
+    while True:
+        review_url = input("Enter an URL to a review for the album (just press enter to end): ")
+
+        if not review_url:
+            return reviews
+
+        reviews.append(review_url)

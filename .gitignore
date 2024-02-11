@@ -3,3 +3,4 @@ secret.cfg
 albums/*
 !albums/.gitkeep
 __pycache__/
+test.py

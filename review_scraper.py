@@ -44,12 +44,12 @@ def create_reference(review):
     current_date = current_date.replace('.0', '.').lstrip('0')
 
     if review['domain'] != 'blabbermouth.net':
-        reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']} | "
-                 f"Tekijä = {review['author']} | Sivusto = {review['domain']} | "
+        reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"
+                 f" | Tekijä = {review['author']} | Sivusto = {review['domain']} | "
                  f"Ajankohta = {review['date']} | Viitattu = {current_date} }}}}</ref>")
     else:
-        reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']} | "
-                    f"Tekijä = {review['author']} | Sivusto = {review['domain']} | "
+        reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"
+                    f" | Tekijä = {review['author']} | Sivusto = {review['domain']} | "
                     f"Ajankohta = | Viitattu = {current_date} | Kieli = {{{{en}}}} }}}}</ref>")
 
     return reference
@@ -57,7 +57,7 @@ def create_reference(review):
 def get_kaaoszine_review(soup, review_url):
 
     domain = 'kaaoszine.fi'
-    
+
     title = soup.find(class_='article-title').get_text()
 
     # Initialize a variable to hold the rating
@@ -102,10 +102,10 @@ def get_kaaoszine_review(soup, review_url):
     album_rating = create_album_rating(review)
 
     return album_rating
-    
+
 def get_soundi_review(soup, review_url):
     domain = 'www.soundi.fi'
-    title = soup.find('h1', class_='text-3xl leading-7 lg:leading-11 md:text-4xl lg:text-5xl font-montserrat font-bold').get_text()
+    title = soup.find('h1').get_text()
     max_rating = 5
 
     # Find out the rating by counting amount of li tags
@@ -116,9 +116,9 @@ def get_soundi_review(soup, review_url):
     rating = len(ratings)
 
     # Locate credits and release date
-    credit_divs = soup.find('div', class_='flex w-full overflow-hidden mb-6 pb-3 text-xs px-2 sm:px-0')
+    credit = soup.find('div', class_='flex w-full overflow-hidden mb-6 pb-3 text-xs px-2 sm:px-0')
 
-    divs = credit_divs.find_all('div')
+    divs = credit.find_all('div')
 
     author_name = divs[1].get_text().split(':')[1].strip()[:-1]
     release_date = divs[0].get_text().split()[-1][:-1]
@@ -136,7 +136,7 @@ def get_soundi_review(soup, review_url):
             "url": review_url,
             "domain": domain
         }
-    
+
     album_rating = create_album_rating(review)
 
     return album_rating
@@ -149,7 +149,7 @@ def get_blabbermouth_review(soup, review_url):
     title = artist + ' - ' + album
 
     # Get rating
-    rating_div = soup.find('div', class_='reviews-rate-comments margin__top-default margin__bottom-default')
+    rating_div = soup.find('div', class_='reviews-rate-comments')
 
     if rating_div:
         rating = rating_div.find('div').get_text().split('/')[0].strip()

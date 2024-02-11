@@ -4,7 +4,7 @@
 import sys
 import time
 
-from helpers import fill_album_info_box, fill_tracklist, fill_lineup
+from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews
 
 def run(link):
     """Main function to be run
@@ -24,6 +24,10 @@ def run(link):
     fill_tracklist(url_id, file_and_album)
 
     fill_lineup(file_and_album)
+
+    reviews = get_reviews()
+
+    add_reviews(reviews, file_and_album)
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
