@@ -97,16 +97,10 @@ def get_review_date(soup, domain):
 
 def get_review_rating(soup, domain):
     if domain == 'kaaoszine.fi':
-        # Initialize a variable to hold the rating
-        rating = 0
-        rating_div = soup.find('div', class_='rating')
-        divs = rating_div.find_all('div')
-
-        for div in divs:
-            if 'one' in div.get('class', []):
-                rating += 1
-            elif 'half' in div.get('class', []):
-                rating += 0.5
+        rating_div = soup.find(class_='rating')
+        one_count = len(rating_div.find_all(class_='one'))
+        half_count = len(rating_div.find_all(class_='half'))
+        rating = one_count + 0.5 * half_count
     elif domain == 'www.soundi.fi':
         div = soup.find('div', class_='pb-2 flex pt-2 justify-center')
         ratings = div.find_all('li')
@@ -125,14 +119,10 @@ def create_reference(review):
     # Remove leading zeros from day and month
     current_date = current_date.replace('.0', '.').lstrip('0')
 
-    if review['domain'] != 'blabbermouth.net':
-        reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"
-                 f" | Tekijä = {review['author']} | Sivusto = {review['domain']} | "
-                 f"Ajankohta = {review['date']} | Viitattu = {current_date} }}}}</ref>")
-    else:
-        reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"
-                    f" | Tekijä = {review['author']} | Sivusto = {review['domain']} | "
-                    f"Ajankohta = | Viitattu = {current_date} | Kieli = {{{{en}}}} }}}}</ref>")
+    reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"
+             f" | Tekijä = {review['author']} | Sivusto = {review['domain']} | "
+             f"Ajankohta = {'' if review['domain'] == 'blabbermouth.net' else review['date']}"
+             f" | Viitattu = {current_date} | Kieli = {{{{en}}}} }}}}</ref>")
 
     return reference
 
