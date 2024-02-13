@@ -64,10 +64,11 @@ def get_release_information(url_id):
 
     json_response = response.json()
 
-    day, month, year = map(int, json_response['resource']['releaseDate'].split('-'))
+    year, month, day = map(int, json_response['resource']['releaseDate'].split('-'))
 
     album_data = {
                 'album_title': json_response['resource']['title'],
+                'release_year': year,
                 'artist': json_response['resource']['artists'][0]['name'],
                 'artist_id': json_response['resource']['artists'][0]['id'],
                 'full_date': f"{day}. {c.KK[month - 1]} {year}",
@@ -270,8 +271,10 @@ def fill_album_info_box(url_id):
         ' | julkaistu         = ',
         ' | minuutit          = ',
         ' | sekunnit          = ',
+        ' | tämä              = ',
+        ' | vuosit            = ',
         ' | edellinen         = ',
-        ' | vuosie            = ',
+        ' | vuosie            = '
     ]
 
     new_content = [
@@ -280,6 +283,8 @@ def fill_album_info_box(url_id):
         album_data['full_date'],
         str(album_data['total_min']),
         str(album_data['total_sec']).zfill(2),
+        album_data['album_title'],
+        album_data['release_year'],
         previous_album['title'] if previous_album else '',
         previous_album['year'] if previous_album else ''
     ]

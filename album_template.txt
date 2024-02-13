@@ -18,10 +18,10 @@
  | piilota julkaisut = 
  | artistin          = 
  | tarkkatyyppi      = 
+ | tämä              = 
  | vuosit            = 
  | edellinen         = 
  | vuosie            = 
  | seuraava          = 
  | vuosis            = 
-
 }}
