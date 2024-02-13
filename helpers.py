@@ -53,34 +53,29 @@ def get_release_information(url_id):
         if response.status_code == 451:
             sys.exit(f'{response.status_code}: Unavailable due to demand from the right-holders to \
                       prohibit access to the resource.')
-
-        if response.status_code == 404:
+        elif response.status_code == 404:
             sys.exit(f'{response.status_code}: The requested resource {url} could not be found')
-
-        if response.status_code == 200:
-            json_response = response.json()
-
-            day = json_response['resource']['releaseDate'].split('-')[2]
-            month = json_response['resource']['releaseDate'].split('-')[1]
-            year = json_response['resource']['releaseDate'].split('-')[0]
-
-            album_data = {}
-
-            album_data['album_title'] = json_response['resource']['title']
-            album_data['artist'] = json_response['resource']['artists'][0]['name']
-            album_data['artist_id'] = json_response['resource']['artists'][0]['id']
-
-            album_data['full_date'] = str(day) + ". " + c.KK[int(month)-1] + " " + str(year)
-            album_data['total_min'], album_data['total_sec'] = \
-                  divmod(json_response['resource']['duration'], 60)
-
-            return album_data
-
-        sys.exit(f'{response.status_code}: Something went wrong, please try again later')
+        elif response.status_code != 200:
+            sys.exit(f'{response.status_code}: Something went wrong, please try again later')
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
     except requests.exceptions.RequestException as e:
         sys.exit("An error occurred:", e)
+
+    json_response = response.json()
+
+    day, month, year = map(int, json_response['resource']['releaseDate'].split('-'))
+
+    album_data = {
+                'album_title': json_response['resource']['title'],
+                'artist': json_response['resource']['artists'][0]['name'],
+                'artist_id': json_response['resource']['artists'][0]['id'],
+                'full_date': f"{day}. {c.KK[month - 1]} {year}",
+                'total_min': json_response['resource']['duration'] // 60,
+                'total_sec': json_response['resource']['duration'] % 60
+            }
+
+    return album_data
 
 def get_tracklist(tracks_url):
     """Function that generates album tracklist
@@ -97,29 +92,29 @@ def get_tracklist(tracks_url):
     try:
         response = requests.get(url=tracks_url, headers=headers, timeout=(3, 5))
         json_response = response.json()
-
-        tracklist = []
-
-        for i in json_response['data']:
-            track_num = i['resource']['trackNumber']
-            title = i['resource']['title']
-            duration = i['resource']['duration']
-            minutes, seconds = divmod(duration, 60)
-
-            track = {
-                "track_number": track_num,
-                "track_title": title,
-                "track_minutes": minutes,
-                "track_seconds": seconds
-            }
-
-            tracklist.append(track)
-
-        return tracklist
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
     except requests.exceptions.RequestException as e:
         sys.exit("An error occurred:", e)
+
+    tracklist = []
+
+    for i in json_response['data']:
+        track_num = i['resource']['trackNumber']
+        title = i['resource']['title']
+        duration = i['resource']['duration']
+        minutes, seconds = divmod(duration, 60)
+
+        track = {
+            "track_number": track_num,
+            "track_title": title,
+            "track_minutes": minutes,
+            "track_seconds": seconds
+        }
+
+        tracklist.append(track)
+
+    return tracklist
 
 def construct_path(artist, title):
     """Function that creates the output file
@@ -171,32 +166,31 @@ def get_all_artist_albums(artist_id):
 
     try:
         response = requests.get(url=url, headers=headers, timeout=(3,5))
-
         json_response = response.json()
-
-        all_albums = []
-
-        for i in json_response['data']:
-            if i['status'] == 451:
-                album = {
-                    "title": "Not available",
-                    "release_date": "Not available"
-                }
-                all_albums.append(album)
-            else:
-                if i['resource']['type'] == 'ALBUM':
-                    album = {
-                        "title": i['resource']['title'],
-                        "release_date": i['resource']['releaseDate']
-                    }
-
-                    all_albums.append(album)
-
-        return all_albums
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
     except requests.exceptions.RequestException as e:
         sys.exit("An error occurred:", e)
+
+    all_albums = []
+
+    for i in json_response['data']:
+        if i['status'] == 451:
+            album = {
+                "title": "Not available",
+                "release_date": "Not available"
+            }
+            all_albums.append(album)
+        else:
+            if i['resource']['type'] == 'ALBUM':
+                album = {
+                    "title": i['resource']['title'],
+                    "release_date": i['resource']['releaseDate']
+                }
+
+                all_albums.append(album)
+
+    return all_albums
 
 def get_previous_album(current_album):
     """Function to get previous album information
