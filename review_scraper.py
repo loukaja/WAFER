@@ -15,29 +15,109 @@ def get_review(review_url):
     try:
         response = requests.get(url=review_url, timeout=(3, 5))
         soup = BeautifulSoup(response.text, 'html.parser')
-        if domain == 'kaaoszine.fi':
-            review = get_kaaoszine_review(soup, review_url)
-        elif domain == 'www.soundi.fi':
-            review = get_soundi_review(soup, review_url)
-        elif domain == 'metalliluola.fi':
-            review = get_metalliluola_review(soup, review_url)
-        elif domain == 'blabbermouth.net':
-            review = get_blabbermouth_review(soup, review_url)
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
     except requests.exceptions.RequestException as e:
         sys.exit("An error occurred:", e)
 
-    return review
+    title = get_review_title(soup, domain)
+    author = get_review_author(soup, domain)
+    date = get_review_date(soup, domain)
+    rating = get_review_rating(soup, domain)
+
+    review = {
+        "title": title,
+        "author": author,
+        "date": date,
+        "rating": rating,
+        "url": review_url,
+        "domain": domain
+    }
+
+    rating = create_album_rating(review)
+    reference = create_reference(review)
+
+    rating_and_reference = rating + reference
+
+    return rating_and_reference
 
 def create_album_rating(review):
-    if review['domain'] == 'kaaoszine.fi' or review['domain'] == 'blabbermouth.net' or review['domain'] == 'metalliluola.fi':
-        site = review['domain'].split('.')[0].title()
-    elif review['domain'] == 'www.soundi.fi':
-        site = review['domain'].split('.')[1].title()
-    rating = f"* [[{site}]]: {{{{Arvostelutähdet|{review['rating']}|{review['max_rating']}}}}}"
-    reference = create_reference(review)
-    rating = rating + reference
+    split_domain = review['domain'].split('.')
+    site = split_domain[0].title() if len(split_domain) == 2 else split_domain[1].title()
+    max_rating = 5 if review['domain'] in ['kaaoszine.fi', 'www.soundi.fi'] else 10
+    rating = f"* [[{site}]]: {{{{Arvostelutähdet|{review['rating']}|{max_rating}}}}}"
+    return rating
+
+def get_review_title(soup, domain):
+    if domain == 'kaaoszine.fi':
+        title = soup.find(class_='article-title').get_text()
+    elif domain == 'www.soundi.fi':
+        title = soup.find('h1').get_text()
+    elif domain == 'metalliluola.fi':
+        title = soup.find('h1').get_text()
+    elif domain == 'blabbermouth.net':
+        artist = soup.find('h1', class_='margin__top-default margin__bottom-default').get_text()
+        album = soup.find('h2', class_='margin__bottom-default').get_text()
+
+        title = artist + ' - ' + album
+
+    return title
+
+def get_review_author(soup, domain):
+    if domain == 'kaaoszine.fi':
+        author_and_date_div = soup.find('div', class_='author-and-date')
+        author = author_and_date_div.find('strong').get_text()
+    elif domain == 'www.soundi.fi':
+        date_and_author = soup.find_all('div', class_='text-gray-400')
+        author = date_and_author[1].get_text().split(':')[1].strip()[:-1]
+    elif domain == 'metalliluola.fi':
+        author_div = soup.find('div', class_='td-post-author-name')
+        author = author_div.a.get_text()
+    elif domain == 'blabbermouth.net':
+        author_div = soup.find('div', class_='news-relative-items').find('div')
+        author = author_div.get_text(strip=True).replace('Author:', '')
+
+    return author
+
+def get_review_date(soup, domain):
+    if domain == 'kaaoszine.fi':
+        author_and_date_div = soup.find('div', class_='author-and-date')
+        date = author_and_date_div.get_text().split('-')[-1].strip()
+    elif domain == 'www.soundi.fi':
+        date_and_author = soup.find_all('div', class_='text-gray-400')
+        release_date = date_and_author[0].get_text().split()[-1][:-1]
+        month, year = release_date.split('/')
+        date = c.KK_BASE[int(month)] + ' ' + year
+    elif domain == 'metalliluola.fi':
+        date = soup.find('time', class_='entry-date updated td-module-date').get_text()
+    elif domain == 'blabbermouth.net':
+        date = 'Unavailable'
+
+    return date
+
+def get_review_rating(soup, domain):
+    if domain == 'kaaoszine.fi':
+        # Initialize a variable to hold the rating
+        rating = 0
+        rating_div = soup.find('div', class_='rating')
+        divs = rating_div.find_all('div')
+
+        for div in divs:
+            if 'one' in div.get('class', []):
+                rating += 1
+            elif 'half' in div.get('class', []):
+                rating += 0.5
+    elif domain == 'www.soundi.fi':
+        div = soup.find('div', class_='pb-2 flex pt-2 justify-center')
+        ratings = div.find_all('li')
+        rating = len(ratings)
+    elif domain == 'metalliluola.fi':
+        rating = soup.find('h3').get_text()
+        rating = rating.split('/')[0].strip()
+    elif domain == 'blabbermouth.net':
+        rating_div = soup.find('div', class_='reviews-rate-comments')
+        rating = rating_div.find('div').get_text().split('/')[0].strip() if rating_div else None
+
     return rating
 
 def create_reference(review):
@@ -55,157 +135,6 @@ def create_reference(review):
                     f"Ajankohta = | Viitattu = {current_date} | Kieli = {{{{en}}}} }}}}</ref>")
 
     return reference
-
-def get_kaaoszine_review(soup, review_url):
-
-    domain = 'kaaoszine.fi'
-
-    title = soup.find(class_='article-title').get_text()
-
-    # Initialize a variable to hold the rating
-    rating = 0
-    max_rating = 5
-
-    # Find the <div> element with class="rating"
-    rating_div = soup.find('div', class_='rating')
-
-    # Find all <div> elements within the rating_div
-    divs = rating_div.find_all('div')
-
-    # Loop through each <div> element
-    for div in divs:
-        # Check if the div has class="one"
-        if 'one' in div.get('class', []):
-            # Increment the rating by 1
-            rating += 1
-        elif 'half' in div.get('class', []):
-            # Increment the rating by 1
-            rating += 0.5
-
-    # Find the <div> element with class="author-and-date"
-    author_and_date_div = soup.find('div', class_='author-and-date')
-
-    # Extract the author name (inside the strong tags)
-    author_name = author_and_date_div.find('strong').get_text()
-
-    # Extract the date (after the dash)
-    date_str = author_and_date_div.get_text().split('-')[-1].strip()
-
-    review = {
-        "title": title,
-        "author": author_name,
-        "date": date_str,
-        "rating": rating,
-        "max_rating": max_rating,
-        "url": review_url,
-        "domain": domain
-    }
-
-    album_rating = create_album_rating(review)
-
-    return album_rating
-
-def get_soundi_review(soup, review_url):
-    domain = 'www.soundi.fi'
-    title = soup.find('h1').get_text()
-    max_rating = 5
-
-    # Find out the rating by counting amount of li tags
-    div = soup.find('div', class_='pb-2 flex pt-2 justify-center')
-
-    ratings = div.find_all('li')
-
-    rating = len(ratings)
-
-    # Locate credits and release date
-    credit = soup.find('div', class_='flex w-full overflow-hidden mb-6 pb-3 text-xs px-2 sm:px-0')
-
-    divs = credit.find_all('div')
-
-    author_name = divs[1].get_text().split(':')[1].strip()[:-1]
-    release_date = divs[0].get_text().split()[-1][:-1]
-    month = release_date.split('/')[0]
-    year = release_date.split('/')[1]
-
-    date_str = c.KK_BASE[int(month)] + ' ' + year
-
-    review = {
-            "title": title,
-            "author": author_name,
-            "date": date_str,
-            "rating": rating,
-            "max_rating": max_rating,
-            "url": review_url,
-            "domain": domain
-        }
-
-    album_rating = create_album_rating(review)
-
-    return album_rating
-
-def get_metalliluola_review(soup, review_url):
-    domain = 'metalliluola.fi'
-
-    title = soup.find('h1').get_text()
-
-    author_div = soup.find('div', class_='td-post-author-name')
-    author_name = author_div.a.get_text()
-
-    date = soup.find('time', class_='entry-date updated td-module-date').get_text()
-
-    rating = soup.find('h3').get_text()
-    rating = rating.split('/')[0].strip()
-    max_rating = 10
-
-    review = {
-            "title": title,
-            "author": author_name,
-            "date": date,
-            "rating": rating,
-            "max_rating": max_rating,
-            "url": review_url,
-            "domain": domain
-        }
-
-    album_rating = create_album_rating(review)
-
-    return album_rating
-
-def get_blabbermouth_review(soup, review_url):
-    domain = 'blabbermouth.net'
-    artist = soup.find('h1', class_='margin__top-default margin__bottom-default').get_text()
-    album = soup.find('h2', class_='margin__bottom-default').get_text()
-
-    title = artist + ' - ' + album
-
-    # Get rating
-    rating_div = soup.find('div', class_='reviews-rate-comments')
-
-    if rating_div:
-        rating = rating_div.find('div').get_text().split('/')[0].strip()
-    else:
-        rating = None
-    max_rating = 10
-
-    # Find the div containing the author's name
-    author_div = soup.find('div', class_='news-relative-items').find('div')
-
-    # Extract the author's name from the text within the div
-    author_name = author_div.get_text(strip=True).replace('Author:', '')
-
-    review = {
-            "title": title,
-            "author": author_name,
-            "date": 'Unavailable',
-            "rating": rating,
-            "max_rating": max_rating,
-            "url": review_url,
-            "domain": domain
-        }
-
-    album_rating = create_album_rating(review)
-
-    return album_rating
 
 if __name__ == '__main__':
 
