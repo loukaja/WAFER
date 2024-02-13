@@ -206,17 +206,7 @@ def get_previous_album(current_album):
 
     all_albums = get_all_artist_albums(current_album['artist_id'])
 
-    current_album_index = None
-
-    # Find the index of the current album in the list
-    for i, album in enumerate(all_albums):
-        if album['title'] == current_album['album_title']:
-            current_album_index = i
-            break
-
-    # If current_album not found, return None
-    if current_album_index is None:
-        return None
+    current_album_index = get_album_index(current_album)
 
     # Iterate over albums starting from the one after current_album
     for album in all_albums[current_album_index + 1:]:
@@ -242,6 +232,45 @@ def get_previous_album(current_album):
     # Return None if no previous album is found
     return None
 
+def get_next_album(current_album):
+    all_albums = get_all_artist_albums(current_album['artist_id'])
+
+    current_album_index = get_album_index(current_album)
+
+    # Iterate over albums starting from the one after current_album
+    for album in reversed(all_albums[:current_album_index]):
+        release_date_str = album['release_date']
+
+        # Check if the release date is 'Not available' - if it is, we assume it's a different
+        # album than current_album because the information was not available
+        if release_date_str == 'Not available':
+            return None
+
+        # If a valid release date is found, check that it's not the same album
+        if release_date_str:
+            if album['title'] == current_album['album_title']:
+                continue
+
+            next_album = {
+                "title": album['title'],
+                # Use release date string directly if datetime parsing fails
+                "year": release_date_str.split('-')[0]
+            }
+            return next_album
+
+    # Return None if no previous album is found
+    return None
+
+def get_album_index(current_album):
+    all_albums = get_all_artist_albums(current_album['artist_id'])
+
+    # Find the index of the current album in the list
+    for i, album in enumerate(all_albums):
+        if album['title'] == current_album['album_title']:
+            return i
+
+    return None
+
 def fill_album_info_box(url_id):
     """Function that writes the information to the created file
 
@@ -255,6 +284,7 @@ def fill_album_info_box(url_id):
     # Get artist and album name, duration, release date and previous album title and release date
     album_data = get_release_information(url_id)
     previous_album = get_previous_album(album_data)
+    next_album = get_next_album(album_data)
 
     # Create new file from template
     file = construct_path(album_data['artist'], album_data['album_title'])
@@ -274,7 +304,9 @@ def fill_album_info_box(url_id):
         ' | tämä              = ',
         ' | vuosit            = ',
         ' | edellinen         = ',
-        ' | vuosie            = '
+        ' | vuosie            = ',
+        ' | seuraava          = ',
+        ' | vuosis            = '
     ]
 
     new_content = [
@@ -286,12 +318,14 @@ def fill_album_info_box(url_id):
         album_data['album_title'],
         album_data['release_year'],
         previous_album['title'] if previous_album else '',
-        previous_album['year'] if previous_album else ''
+        previous_album['year'] if previous_album else '',
+        next_album['title'] if next_album else '',
+        next_album['year'] if next_album else ''
     ]
 
     # Loop through each line, replace with the new content, and update the contents variable
     for i, line_to_modify in enumerate(lines_to_modify):
-        if 'artisti' in line_to_modify or 'edellinen' in line_to_modify:
+        if 'artisti' in line_to_modify or 'edellinen' in line_to_modify or 'seuraava' in line_to_modify:
             contents = contents.replace(line_to_modify, f'{line_to_modify}[[{new_content[i]}]]')
         else:
             contents = contents.replace(line_to_modify, f'{line_to_modify}{new_content[i]}')
