@@ -118,11 +118,14 @@ def create_reference(review):
     current_date = datetime.now().strftime("%d.%m.%Y")
     # Remove leading zeros from day and month
     current_date = current_date.replace('.0', '.').lstrip('0')
+    domain = review['domain']
+
+    language = " | Kieli = {{en}}" if domain == 'blabbermouth.net' else ""
+    date = "Ajankohta =" if domain == 'blabbermouth.net' else f"Ajankohta = {review['date']}"
 
     reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"
-             f" | Tekijä = {review['author']} | Sivusto = {review['domain']} | "
-             f"Ajankohta = {'' if review['domain'] == 'blabbermouth.net' else review['date']}"
-             f" | Viitattu = {current_date} | Kieli = {{{{en}}}} }}}}</ref>")
+             f" | Tekijä = {review['author']} | Sivusto = {domain} | "
+             f"{date} | Viitattu = {current_date}{language} }}}}</ref>")
 
     return reference
 
