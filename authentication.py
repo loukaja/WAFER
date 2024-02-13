@@ -31,7 +31,7 @@ class Authentication:
     def refresh_access_token(self):
 
         # Send a POST request to the API endpoint with the headers and parameters
-        response = requests.post(c.URL, headers=self.header, data=c.PARAMS)
+        response = requests.post(c.URL, headers=self.header, data=c.PARAMS, timeout=(3, 5))
 
         # If the response is successful, update the access token and expiration time
         if response.status_code == 200:
