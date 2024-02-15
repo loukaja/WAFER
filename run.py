@@ -3,7 +3,7 @@
 
 import time
 
-from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews, add_external_links
+from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews, add_external_links, add_references
 
 
 def run(link, reviews, members, external_links):
@@ -23,16 +23,18 @@ def run(link, reviews, members, external_links):
 
     fill_tracklist(url_id, file_and_album)
 
-    print(f"Members: {members}")
-
-    print("Filling in member data")
     fill_lineup(file_and_album, members)
 
     if reviews:
-        print("Getting review data")
         review_list = get_reviews(reviews)
 
         add_reviews(review_list, file_and_album)
 
-    print(external_links)
-    # add_external_links(external_links)
+    # Delete entries without URL's before attempting to add the links
+    for i in range(len(external_links) - 1, -1, -1):
+        if not external_links[i]['url']:
+            del external_links[i]
+
+    add_references(file_and_album)
+
+    add_external_links(external_links, file_and_album)

@@ -436,6 +436,13 @@ def add_reviews(reviews, file_and_album):
                 f.write(r + '\n')
 
 
+def add_references(file_and_album):
+    file = file_and_album[0]
+    with open(file, 'a', encoding='utf-8') as f:
+        f.write('\n== Lähteet ==\n')
+        f.write('{{viitteet}}\n')
+
+
 def is_valid_url(review_url):
     pattern = r'^(http|https):\/\/([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&=]*)?$'
     return re.match(pattern, review_url) is not None
@@ -451,5 +458,31 @@ def get_reviews(review_list):
     return reviews
 
 
-def add_external_links(external_links):
-    pass
+def add_external_links(external_links, file_and_album):
+    file = file_and_album[0]
+    album_data = file_and_album[1]
+    album = album_data['album_title']
+
+    with open(file, 'a', encoding='utf-8') as f:
+        f.write('\n== Aiheesta muualla ==\n')
+
+    links = []
+
+    for link in external_links:
+        if link['name'] == 'discogs':
+            # Example URL: https://www.discogs.com/release/26111269-Parasitario-Everything-Belongs-To-Death
+            id = link['url'].split('/')[-1].split('-')[0]
+            ext_link = f"* {{{{Discogs|master|{id}}}}}"
+            links.append(ext_link)
+        elif link['name'] == 'metal_archives':
+            # Example URL: https://www.metal-archives.com/albums/Watain/Sworn_to_the_Dark/144497
+            id = link['url'].split('/')[-1]
+            ext_link = f"* {{{{Metal-archives|levy={id}}}}}"
+            links.append(ext_link)
+        elif link['name'] == 'bandcamp':
+            ext_link = f"* [{link['url']} Albumi ''{album}'' [[Bandcamp]] -sivustolla {{{{en}}}}]"
+            links.append(ext_link)
+
+    for link in links:
+        with open(file, 'a', encoding='utf-8') as f:
+            f.write(f"{link}\n")

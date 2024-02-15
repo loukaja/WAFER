@@ -18,7 +18,7 @@ with st.form("Form"):
 
     if review_rows > 0:
         st.subheader(
-            "Reviews", help="Enter complete URL!. See About for currently supported review pages!")
+            "Reviews", help="Enter complete URL! See About for currently supported review pages!")
         for i in range(1, review_rows+1):
             st.text_input(
                 label=f"Review {i}", key=f"review_{i}", placeholder="Link to review site")
@@ -27,10 +27,11 @@ with st.form("Form"):
     col1, col2 = st.columns(2)
     for i in range(1, member_rows+1):
         with col1:
-            st.text_input(f"Member {i}", key=f"member_{i}")
+            st.text_input(f"Member", key=f"member_{i}",
+                          placeholder="FirstName LastName")
         with col2:
             st.text_input(
-                "Instrument(s)", key=f"instrument_{i}",
+                "Instrument(s)", key=f"instrument_{i}", placeholder="Guitars, vocals",
                 help="If multiple, space out with a comma, ie 'guitar, singing'")
 
     st.subheader("External links")
