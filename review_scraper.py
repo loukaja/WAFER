@@ -5,13 +5,19 @@ import requests
 from bs4 import BeautifulSoup
 import constants as c
 
+
 def get_domain(review_url):
     parsed_url = urlparse(review_url)
     domain = parsed_url.netloc
     return domain
 
+
 def get_review(review_url):
     domain = get_domain(review_url)
+
+    if domain not in c.SUPPORTED_DOMAINS:
+        return None
+
     try:
         response = requests.get(url=review_url, timeout=(3, 5))
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -41,12 +47,16 @@ def get_review(review_url):
 
     return rating_and_reference
 
+
 def create_album_rating(review):
     split_domain = review['domain'].split('.')
-    site = split_domain[0].title() if len(split_domain) == 2 else split_domain[1].title()
-    max_rating = 5 if review['domain'] in ['kaaoszine.fi', 'www.soundi.fi'] else 10
+    site = split_domain[0].title() if len(
+        split_domain) == 2 else split_domain[1].title()
+    max_rating = 5 if review['domain'] in [
+        'kaaoszine.fi', 'www.soundi.fi'] else 10
     rating = f"* [[{site}]]: {{{{Arvostelutähdet|{review['rating']}|{max_rating}}}}}"
     return rating
+
 
 def get_review_title(soup, domain):
     if domain == 'kaaoszine.fi':
@@ -56,12 +66,14 @@ def get_review_title(soup, domain):
     elif domain == 'metalliluola.fi':
         title = soup.find('h1').get_text()
     elif domain == 'blabbermouth.net':
-        artist = soup.find('h1', class_='margin__top-default margin__bottom-default').get_text()
+        artist = soup.find(
+            'h1', class_='margin__top-default margin__bottom-default').get_text()
         album = soup.find('h2', class_='margin__bottom-default').get_text()
 
         title = artist + ' - ' + album
 
     return title
+
 
 def get_review_author(soup, domain):
     if domain == 'kaaoszine.fi':
@@ -79,6 +91,7 @@ def get_review_author(soup, domain):
 
     return author
 
+
 def get_review_date(soup, domain):
     if domain == 'kaaoszine.fi':
         author_and_date_div = soup.find('div', class_='author-and-date')
@@ -89,11 +102,13 @@ def get_review_date(soup, domain):
         month, year = release_date.split('/')
         date = c.KK_BASE[int(month)] + ' ' + year
     elif domain == 'metalliluola.fi':
-        date = soup.find('time', class_='entry-date updated td-module-date').get_text()
+        date = soup.find(
+            'time', class_='entry-date updated td-module-date').get_text()
     elif domain == 'blabbermouth.net':
         date = 'Unavailable'
 
     return date
+
 
 def get_review_rating(soup, domain):
     if domain == 'kaaoszine.fi':
@@ -110,9 +125,11 @@ def get_review_rating(soup, domain):
         rating = rating.split('/')[0].strip()
     elif domain == 'blabbermouth.net':
         rating_div = soup.find('div', class_='reviews-rate-comments')
-        rating = rating_div.find('div').get_text().split('/')[0].strip() if rating_div else None
+        rating = rating_div.find('div').get_text().split(
+            '/')[0].strip() if rating_div else None
 
     return rating
+
 
 def create_reference(review):
     current_date = datetime.now().strftime("%d.%m.%Y")
@@ -124,10 +141,11 @@ def create_reference(review):
     date = "Ajankohta =" if domain == 'blabbermouth.net' else f"Ajankohta = {review['date']}"
 
     reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"
-             f" | Tekijä = {review['author']} | Sivusto = {domain} | "
-             f"{date} | Viitattu = {current_date}{language} }}}}</ref>")
+                 f" | Tekijä = {review['author']} | Sivusto = {domain} | "
+                 f"{date} | Viitattu = {current_date}{language} }}}}</ref>")
 
     return reference
+
 
 if __name__ == '__main__':
 

@@ -1,12 +1,12 @@
 """Main module to be run
 """
 
-import sys
 import time
 
-from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews
+from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews, add_external_links
 
-def run(link):
+
+def run(link, reviews, members, external_links):
     """Main function to be run
 
     Args:
@@ -23,16 +23,16 @@ def run(link):
 
     fill_tracklist(url_id, file_and_album)
 
-    fill_lineup(file_and_album)
+    print(f"Members: {members}")
 
-    reviews = get_reviews()
+    print("Filling in member data")
+    fill_lineup(file_and_album, members)
 
-    add_reviews(reviews, file_and_album)
+    if reviews:
+        print("Getting review data")
+        review_list = get_reviews(reviews)
 
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Usage: python script.py https://tidal.com/browse/album/<album_id>")
-        sys.exit(1)
+        add_reviews(review_list, file_and_album)
 
-    album_link = sys.argv[1]
-    run(album_link)
+    print(external_links)
+    # add_external_links(external_links)

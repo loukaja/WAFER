@@ -14,6 +14,7 @@ from review_scraper import get_review
 
 access_token = Authentication()
 
+
 def build_headers():
     """Helper function to build headers
 
@@ -26,11 +27,12 @@ def build_headers():
 
     authorization = 'Bearer ' + access_token.access_token
 
-    headers = { 'accept': 'application/vnd.tidal.v1+json',
-            'Authorization': authorization,
-            'Content-Type': 'application/vnd.tidal.v1+json'}
+    headers = {'accept': 'application/vnd.tidal.v1+json',
+               'Authorization': authorization,
+               'Content-Type': 'application/vnd.tidal.v1+json'}
 
     return headers
+
 
 def get_release_information(url_id):
     """Function that fetches album information
@@ -48,15 +50,17 @@ def get_release_information(url_id):
     url = f'https://openapi.tidal.com/albums/{url_id}?countryCode=US'
 
     try:
-        response = requests.get(url=url, headers=headers, timeout=(3,5))
+        response = requests.get(url=url, headers=headers, timeout=(3, 5))
 
         if response.status_code == 451:
             sys.exit(f'{response.status_code}: Unavailable due to demand from the right-holders to \
                       prohibit access to the resource.')
         elif response.status_code == 404:
-            sys.exit(f'{response.status_code}: The requested resource {url} could not be found')
+            sys.exit(
+                f'{response.status_code}: The requested resource {url} could not be found')
         elif response.status_code != 200:
-            sys.exit(f'{response.status_code}: Something went wrong, please try again later')
+            sys.exit(
+                f'{response.status_code}: Something went wrong, please try again later')
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
     except requests.exceptions.RequestException as e:
@@ -64,19 +68,21 @@ def get_release_information(url_id):
 
     json_response = response.json()
 
-    year, month, day = map(int, json_response['resource']['releaseDate'].split('-'))
+    year, month, day = map(
+        int, json_response['resource']['releaseDate'].split('-'))
 
     album_data = {
-                'album_title': json_response['resource']['title'],
-                'release_year': year,
-                'artist': json_response['resource']['artists'][0]['name'],
-                'artist_id': json_response['resource']['artists'][0]['id'],
-                'full_date': f"{day}. {c.KK[month - 1]} {year}",
-                'total_min': json_response['resource']['duration'] // 60,
-                'total_sec': json_response['resource']['duration'] % 60
-            }
+        'album_title': json_response['resource']['title'],
+        'release_year': year,
+        'artist': json_response['resource']['artists'][0]['name'],
+        'artist_id': json_response['resource']['artists'][0]['id'],
+        'full_date': f"{day}. {c.KK[month - 1]} {year}",
+        'total_min': json_response['resource']['duration'] // 60,
+        'total_sec': json_response['resource']['duration'] % 60
+    }
 
     return album_data
+
 
 def get_tracklist(tracks_url):
     """Function that generates album tracklist
@@ -91,7 +97,8 @@ def get_tracklist(tracks_url):
     headers = build_headers()
 
     try:
-        response = requests.get(url=tracks_url, headers=headers, timeout=(3, 5))
+        response = requests.get(
+            url=tracks_url, headers=headers, timeout=(3, 5))
         json_response = response.json()
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
@@ -117,6 +124,7 @@ def get_tracklist(tracks_url):
 
     return tracklist
 
+
 def construct_path(artist, title):
     """Function that creates the output file
 
@@ -136,7 +144,8 @@ def construct_path(artist, title):
         os.makedirs(directory)
 
     # Construct the full file path
-    path = os.path.join(directory, f"{artist.replace(' ', '_')}-{title.replace(' ', '_')}.txt")
+    path = os.path.join(
+        directory, f"{artist.replace(' ', '_')}-{title.replace(' ', '_')}.txt")
 
     # Attempt to remove the file if it already exists
     if os.path.isfile(path):
@@ -150,6 +159,7 @@ def construct_path(artist, title):
         shutil.copyfile('./album_template.txt', path)
 
     return path
+
 
 def get_all_artist_albums(artist_id):
     """Function to get all albums by artist
@@ -166,7 +176,7 @@ def get_all_artist_albums(artist_id):
     url = f'https://openapi.tidal.com/artists/{artist_id}/albums?countryCode=US&limit=50'
 
     try:
-        response = requests.get(url=url, headers=headers, timeout=(3,5))
+        response = requests.get(url=url, headers=headers, timeout=(3, 5))
         json_response = response.json()
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
@@ -192,6 +202,7 @@ def get_all_artist_albums(artist_id):
                 all_albums.append(album)
 
     return all_albums
+
 
 def get_previous_album(current_album):
     """Function to get previous album information
@@ -232,6 +243,7 @@ def get_previous_album(current_album):
     # Return None if no previous album is found
     return None
 
+
 def get_next_album(current_album):
     all_albums = get_all_artist_albums(current_album['artist_id'])
 
@@ -261,6 +273,7 @@ def get_next_album(current_album):
     # Return None if no previous album is found
     return None
 
+
 def get_album_index(current_album):
     all_albums = get_all_artist_albums(current_album['artist_id'])
 
@@ -270,6 +283,7 @@ def get_album_index(current_album):
             return i
 
     return None
+
 
 def fill_album_info_box(url_id):
     """Function that writes the information to the created file
@@ -327,15 +341,18 @@ def fill_album_info_box(url_id):
     keywords = ['artisti', 'edellinen', 'seuraava']
     for i, line_to_modify in enumerate(lines_to_modify):
         if any(keyword in line_to_modify for keyword in keywords):
-            contents = contents.replace(line_to_modify, f'{line_to_modify}[[{new_content[i]}]]')
+            contents = contents.replace(
+                line_to_modify, f'{line_to_modify}[[{new_content[i]}]]')
         else:
-            contents = contents.replace(line_to_modify, f'{line_to_modify}{new_content[i]}')
+            contents = contents.replace(
+                line_to_modify, f'{line_to_modify}{new_content[i]}')
 
     # Write the modified contents back to the file
     with open(file, 'w', encoding='utf-8') as f:
         f.write(contents)
 
     return [file, album_data]
+
 
 def fill_tracklist(url_id, file_and_album):
     """Function that writes the track list information to the file
@@ -355,26 +372,30 @@ def fill_tracklist(url_id, file_and_album):
 
     # Append the start of the tracklist module to the file
     with open(file, 'a', encoding='utf-8') as f:
-        f.write('\n== Kappaleet ==')
+        f.write('\n\n== Kappaleet ==')
         f.write('\n{{Kappalelista')
-        f.write(f'\n | kokonaiskesto    = {album_data["total_min"]}.{album_data["total_sec"]:02d}')
+        f.write(
+            f'\n | kokonaiskesto    = {album_data["total_min"]}.{album_data["total_sec"]:02d}')
 
     # Then the actual tracks one by one
     for track in tracklist:
         with open(file, 'a', encoding='utf-8') as fd:
             # Format the track duration string with leading zero for single-digit seconds
             track_duration = f'{track["track_minutes"]}.{track["track_seconds"]:02d}'
-            fd.write(f'\n | nimi{track["track_number"]}           = {track["track_title"]}')
+            fd.write(
+                f'\n | nimi{track["track_number"]}           = {track["track_title"]}')
             fd.write(f'\n | huom{track["track_number"]}           = ')
-            fd.write(f'\n | pituus{track["track_number"]}         = {track_duration}')
+            fd.write(
+                f'\n | pituus{track["track_number"]}         = {track_duration}')
             fd.write('\n')
 
     # Add closing curly braces for the tracklist part of the template
     with open(file, 'a', encoding='utf-8') as f:
         f.write('}}\n')
 
-def fill_lineup(file_and_album):
-    """Function that writes lineup parts to the output file if available
+
+def fill_lineup(file_and_album, members):
+    """Function that writes lineup parts to the output file
 
     Args:
         file_and_album (list): File path and album data
@@ -384,33 +405,22 @@ def fill_lineup(file_and_album):
     file = file_and_album[0]
 
     with open(file, 'a', encoding='utf-8') as f:
-        f.write('\n== Kokoonpano ==')
+        f.write('\n== Kokoonpano ==\n')
 
-    # Read lineup from file if it exists, then write the information to template
-    # NOTE! This assumes a format of Firstname Lastname - instrument, instrument, instrument
+    if members:
+        for member in members:
+            instruments = [inst.strip()
+                           for inst in member['instruments'].split(',')]
+            instruments_str = ''
+            if len(instruments) == 1:
+                instruments_str = f'[[{instruments[0]}]]'
+            else:
+                for instrument in instruments:
+                    instruments_str = instruments_str + f"[[{instrument}]], "
+                instruments_str = instruments_str[:-2]
+            with open(file, 'a', encoding='utf-8') as f:
+                f.write(f"* [[{member['name']}]] - {instruments_str}\n")
 
-    if os.path.isfile('./lineup.txt'):
-        with open('lineup.txt', 'r', encoding='utf-8') as f:
-            lineup = [line.strip() for line in f]
-
-        # Make lineup a dict
-        band_dict = [{'Artist': artist_instrument[0].strip(), \
-                      'Instruments': artist_instrument[1].strip()} \
-                        for artist_instrument in [artist.split('-') for artist in lineup]]
-
-        with open(list[0], 'a', encoding='utf-8') as f:
-            f.write('\n')
-            for artist in band_dict:
-                artist_str = f"[[{artist['Artist']}]]"
-                instruments_str_list = [inst.strip() for inst in artist['Instruments'].split(',')]
-                instruments_str = ''
-                if len(instruments_str_list) == 1:
-                    instruments_str = f'[[{instruments_str_list[0]}]]'
-                else:
-                    for instrument in instruments_str_list:
-                        instruments_str = instruments_str + f"[[{instrument}]], "
-                    instruments_str = instruments_str[:-2]
-                f.write('* ' + artist_str + ' - ' + instruments_str + '\n')
 
 def add_reviews(reviews, file_and_album):
     file = file_and_album[0]
@@ -421,25 +431,25 @@ def add_reviews(reviews, file_and_album):
 
     for review in reviews:
         r = get_review(review)
-        with open(file, 'a', encoding='utf-8') as f:
-            f.write(r + '\n')
+        if r:
+            with open(file, 'a', encoding='utf-8') as f:
+                f.write(r + '\n')
+
 
 def is_valid_url(review_url):
     pattern = r'^(http|https):\/\/([\w\-]+\.)+[\w\-]+(\/[\w\-./?%&=]*)?$'
     return re.match(pattern, review_url) is not None
 
-def get_reviews():
+
+def get_reviews(review_list):
+
     reviews = []
+    for review in review_list:
+        if is_valid_url(review):
+            reviews.append(review)
 
-    while True:
-        review_url = input("Enter an URL to a review for the album (just press enter to end): ")
+    return reviews
 
-        if not review_url:
-            return reviews
 
-        if review_url not in reviews and is_valid_url(review_url):
-            reviews.append(review_url)
-        elif review_url in reviews:
-            print("This review URL is already in the list.")
-        else:
-            print("Invalid URL. Please enter a valid URL.")
+def add_external_links(external_links):
+    pass
