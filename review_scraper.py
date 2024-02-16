@@ -43,17 +43,26 @@ def get_review(review_url):
     rating = create_album_rating(review)
     reference = create_reference(review)
 
-    rating_and_reference = rating + reference
+    if rating and reference:
+        rating_and_reference = rating + reference
 
-    return rating_and_reference
+        return rating_and_reference
+
+    return None
 
 
 def create_album_rating(review):
     split_domain = review['domain'].split('.')
-    site = split_domain[0].title() if len(
-        split_domain) == 2 else split_domain[1].title()
+    if split_domain[0] == 'metalinjection':
+        site = 'Metal Injection'
+    else:
+        site = split_domain[0].title() if len(
+            split_domain) == 2 else split_domain[1].title()
+
     max_rating = 5 if review['domain'] in [
         'kaaoszine.fi', 'www.soundi.fi'] else 10
+    if not review['rating']:
+        return None
     rating = f"* [[{site}]]: {{{{Arvostelutähdet|{review['rating']}|{max_rating}}}}}"
     return rating
 
@@ -69,8 +78,11 @@ def get_review_title(soup, domain):
         artist = soup.find(
             'h1', class_='margin__top-default margin__bottom-default').get_text()
         album = soup.find('h2', class_='margin__bottom-default').get_text()
-
         title = artist + ' - ' + album
+    elif domain == 'metalinjection.net':
+        title = soup.find('h1').get_text()
+    elif domain == 'www.metalsucks.net':
+        title = soup.find('h1').get_text()
 
     return title
 
@@ -88,6 +100,11 @@ def get_review_author(soup, domain):
     elif domain == 'blabbermouth.net':
         author_div = soup.find('div', class_='news-relative-items').find('div')
         author = author_div.get_text(strip=True).replace('Author:', '')
+    elif domain == 'metalinjection.net':
+        author_span = soup.find('span', class_='zox-author-name')
+        author = author_span.find('a').get_text()
+    elif domain == 'www.metalsucks.net':
+        author = soup.find('span', class_='author').find('a').get_text()
 
     return author
 
@@ -106,6 +123,12 @@ def get_review_date(soup, domain):
             'time', class_='entry-date updated td-module-date').get_text()
     elif domain == 'blabbermouth.net':
         date = 'Unavailable'
+    elif domain == 'metalinjection.net':
+        date_time = soup.find('time')['datetime']
+        date = datetime.strptime(date_time, '%Y-%m-%d').strftime('%#d.%#m.%Y')
+    elif domain == 'www.metalsucks.net':
+        date_time = soup.find('time')['datetime']
+        date = datetime.strptime(date_time, '%Y-%m-%d').strftime('%#d.%#m.%Y')
 
     return date
 
@@ -127,6 +150,18 @@ def get_review_rating(soup, domain):
         rating_div = soup.find('div', class_='reviews-rate-comments')
         rating = rating_div.find('div').get_text().split(
             '/')[0].strip() if rating_div else None
+    elif domain == 'metalinjection.net':
+        rating_span = soup.find(
+            'span', class_='rwp-overlall-score-value')
+        rating = rating_span.get_text() if rating_span else None
+    elif domain == 'www.metalsucks.net':
+        img_tag = soup.find('div', class_='rating').find('img')
+        src_value = img_tag['src']
+        rating = src_value.split('/')[-1].split('.')[0].split('-')[1]
+        if rating[1] == 5:
+            rating = int(rating) / 10
+        else:
+            rating = int(int(rating) / 10)
 
     return rating
 
@@ -137,7 +172,7 @@ def create_reference(review):
     current_date = current_date.replace('.0', '.').lstrip('0')
     domain = review['domain']
 
-    language = " | Kieli = {{en}}" if domain == 'blabbermouth.net' else ""
+    language = " | Kieli = {{en}}" if domain == 'blabbermouth.net' or domain == 'metalinjection.net' else ""
     date = "Ajankohta =" if domain == 'blabbermouth.net' else f"Ajankohta = {review['date']}"
 
     reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"

@@ -8,4 +8,4 @@ KK_BASE = ['Tammikuu', 'Helmikuu', 'Maaliskuu', 'Huhtikuu', 'Toukokuu',
 KK = ['tammikuuta', 'helmikuuta', 'maaliskuuta', 'huhtikuuta', 'toukokuuta', 'kesäkuuta',
       'heinäkuuta', 'elokuuta', 'syyskuuta', 'lokakuuta', 'marraskuuta', 'joulukuuta']
 SUPPORTED_DOMAINS = ['kaaoszine.fi', 'www.soundi.fi',
-                     'metalliluola.fi', 'blabbermouth.net']
+                     'metalliluola.fi', 'blabbermouth.net', 'metalinjection.net', 'www.metalsucks.net']
