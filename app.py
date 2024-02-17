@@ -7,6 +7,7 @@ outer_col1, outer_col2 = st.columns(2)
 with outer_col1:
     review_rows = st.number_input(
         "Review amount", min_value=0, step=1, key="review_rows")
+    stub = st.checkbox("Mark article as stub")
 with outer_col2:
     member_rows = st.number_input(
         "Members", min_value=1, step=1, key="member_rows")
@@ -72,7 +73,7 @@ if submitted:
         {"name": "bandcamp", "url": st.session_state["bandcamp_url"]}
     ]
 
-    wiki_template = run(link, reviews, members, external_links)
+    wiki_template = run(link, reviews, members, external_links, stub)
 
     if wiki_template:
         st.text_area(label="Test", value=wiki_template, height=500)
