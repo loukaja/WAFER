@@ -3,7 +3,7 @@
 
 import time
 
-from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews, add_external_links, add_references
+from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews, add_external_links, add_references, export_wiki_template
 
 
 def run(link, reviews, members, external_links):
@@ -38,3 +38,7 @@ def run(link, reviews, members, external_links):
     add_references(file_and_album)
 
     add_external_links(external_links, file_and_album)
+
+    wiki_template = export_wiki_template(file_and_album)
+
+    return wiki_template

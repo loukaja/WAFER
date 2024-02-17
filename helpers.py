@@ -480,9 +480,18 @@ def add_external_links(external_links, file_and_album):
             ext_link = f"* {{{{Metal-archives|levy={id}}}}}"
             links.append(ext_link)
         elif link['name'] == 'bandcamp':
-            ext_link = f"* [{link['url']} Albumi ''{album}'' [[Bandcamp]] -sivustolla {{{{en}}}}]"
+            ext_link = f"* [{link['url']} Albumi ''{album}''] [[Bandcamp]] -sivustolla {{{{en}}}}"
             links.append(ext_link)
 
     for link in links:
         with open(file, 'a', encoding='utf-8') as f:
             f.write(f"{link}\n")
+
+
+def export_wiki_template(file_and_album):
+    file = file_and_album[0]
+    with open(file, 'r', encoding='utf-8') as f:
+        # Read the contents of the file
+        contents = f.read()
+
+    return contents

@@ -72,4 +72,7 @@ if submitted:
         {"name": "bandcamp", "url": st.session_state["bandcamp_url"]}
     ]
 
-    run(link, reviews, members, external_links)
+    wiki_template = run(link, reviews, members, external_links)
+
+    if wiki_template:
+        st.text_area(label="Test", value=wiki_template, height=500)
