@@ -495,3 +495,9 @@ def export_wiki_template(file_and_album):
         contents = f.read()
 
     return contents
+
+
+def add_stub(file_and_album):
+    file = file_and_album[0]
+    with open(file, 'a', encoding='utf-8') as f:
+        f.write(f"\n{{{{Tynkä/Albumi}}}}\n")
