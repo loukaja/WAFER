@@ -217,6 +217,9 @@ def get_previous_album(current_album):
 
     all_albums = get_all_artist_albums(current_album['artist_id'])
 
+    if len(all_albums) == 1:
+        return None
+
     current_album_index = get_album_index(current_album)
 
     # Iterate over albums starting from the one after current_album
@@ -246,6 +249,9 @@ def get_previous_album(current_album):
 
 def get_next_album(current_album):
     all_albums = get_all_artist_albums(current_album['artist_id'])
+
+    if len(all_albums) == 1:
+        return None
 
     current_album_index = get_album_index(current_album)
 
@@ -285,7 +291,7 @@ def get_album_index(current_album):
     return None
 
 
-def fill_album_info_box(url_id):
+def fill_album_info_box(url_id, toc):
     """Function that writes the information to the created file
 
     Args:
@@ -320,7 +326,8 @@ def fill_album_info_box(url_id):
         ' | edellinen         = ',
         ' | vuosie            = ',
         ' | seuraava          = ',
-        ' | vuosis            = '
+        ' | vuosis            = ',
+        '}}'
     ]
 
     new_content = [
@@ -334,7 +341,8 @@ def fill_album_info_box(url_id):
         previous_album['title'] if previous_album else '',
         previous_album['year'] if previous_album else '',
         next_album['title'] if next_album else '',
-        next_album['year'] if next_album else ''
+        next_album['year'] if next_album else '',
+        '__NOTOC__' if not toc else ''
     ]
 
     # Loop through each line, replace with the new content, and update the contents variable

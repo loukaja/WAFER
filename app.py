@@ -23,6 +23,7 @@ with outer_col1:
 with outer_col2:
     member_rows = st.number_input(
         "Members", min_value=1, step=1, key="member_rows")
+    toc = st.checkbox("Generate Table of Contents", value=True)
 
 with st.form("Form"):
     st.subheader("Album Info")
@@ -89,6 +90,6 @@ if submitted:
         {"name": "bandcamp", "url": st.session_state["bandcamp_url"]}
     ]
 
-    wiki_template = run(link, reviews, members, external_links, stub)
+    wiki_template = run(link, reviews, members, external_links, stub, toc)
     form_callback(wiki_template)
     st.rerun()

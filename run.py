@@ -6,7 +6,7 @@ import time
 from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews, add_external_links, add_references, export_wiki_template, add_stub
 
 
-def run(link, reviews, members, external_links, stub):
+def run(link, reviews, members, external_links, stub, toc):
     """Main function to be run
 
     Args:
@@ -16,7 +16,7 @@ def run(link, reviews, members, external_links, stub):
     # Grab the ID from the album link
     url_id = link.split('/')[-1]
 
-    file_and_album = fill_album_info_box(url_id)
+    file_and_album = fill_album_info_box(url_id, toc)
 
     # Sleep for a second so we don't hammer the API too often
     time.sleep(1)
