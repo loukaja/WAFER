@@ -181,7 +181,7 @@ def get_all_artist_albums(artist_id):
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
     except requests.exceptions.RequestException as e:
-        sys.exit("An error occurred:", e)
+        sys.exit(f"An error occurred: {e}")
 
     all_albums = []
 

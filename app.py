@@ -1,7 +1,19 @@
 import streamlit as st
+import clipman
 from run import run
 
+clipman.init()
+
 st.title("Welcome to WAFER!")
+
+if "template" not in st.session_state:
+    st.session_state["template"] = ""
+
+
+def form_callback(text):
+    st.session_state.template = text
+
+
 outer_col1, outer_col2 = st.columns(2)
 
 with outer_col1:
@@ -42,9 +54,13 @@ with st.form("Form"):
     st.text_input(label="Metal-Archives link", key="metal_archives_url",
                   placeholder="Link to Metal-Archives album page")
     st.text_input("Bandcamp", key="bandcamp_url",
-                  placeholder="Discogs album page")
+                  placeholder="Bandcamp album page")
 
     submitted = st.form_submit_button("Generate")
+
+# Initialize wiki_template with an empty string to ensure the text area is visible
+st.text_area(label="Template", height=500, value=st.session_state.template)
+st.button("Copy to clipboard", on_click=clipman.set(st.session_state.template))
 
 if submitted:
     link = st.session_state["album_url"]
@@ -74,6 +90,5 @@ if submitted:
     ]
 
     wiki_template = run(link, reviews, members, external_links, stub)
-
-    if wiki_template:
-        st.text_area(label="Test", value=wiki_template, height=500)
+    form_callback(wiki_template)
+    st.rerun()
