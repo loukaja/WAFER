@@ -509,3 +509,11 @@ def add_stub(file_and_album):
     file = file_and_album[0]
     with open(file, 'a', encoding='utf-8') as f:
         f.write(f"\n{{{{Tynkä/Albumi}}}}\n")
+
+
+def add_classes(file_and_album, classes):
+    file = file_and_album[0]
+
+    for class_ in classes:
+        with open(file, 'a', encoding="utf-8") as f:
+            f.write(f"\n[[Luokka:{class_}]]\n")

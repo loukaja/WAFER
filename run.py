@@ -3,10 +3,10 @@
 
 import time
 
-from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews, add_external_links, add_references, export_wiki_template, add_stub
+from helpers import fill_album_info_box, fill_tracklist, fill_lineup, get_reviews, add_reviews, add_external_links, add_references, export_wiki_template, add_stub, add_classes
 
 
-def run(link, reviews, members, external_links, stub, toc):
+def run(link, reviews, members, external_links, stub, toc, classes):
     """Main function to be run
 
     Args:
@@ -41,6 +41,8 @@ def run(link, reviews, members, external_links, stub, toc):
 
     if stub:
         add_stub(file_and_album)
+
+    add_classes(file_and_album, classes)
 
     wiki_template = export_wiki_template(file_and_album)
 

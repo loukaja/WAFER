@@ -14,16 +14,21 @@ def form_callback(text):
     st.session_state.template = text
 
 
-outer_col1, outer_col2 = st.columns(2)
+with st.container(border=True):
+    st.subheader("Form options")
+    outer_col1, outer_col2, outer_col3 = st.columns(3)
 
-with outer_col1:
-    review_rows = st.number_input(
-        "Review amount", min_value=0, step=1, key="review_rows")
-    stub = st.checkbox("Mark article as stub")
-with outer_col2:
-    member_rows = st.number_input(
-        "Members", min_value=1, step=1, key="member_rows")
-    toc = st.checkbox("Generate Table of Contents", value=True)
+    with outer_col1:
+        review_rows = st.number_input(
+            "Review amount", min_value=0, step=1, key="review_rows")
+        stub = st.checkbox("Mark article as stub")
+    with outer_col2:
+        member_rows = st.number_input(
+            "Members", min_value=1, step=1, key="member_rows")
+        toc = st.checkbox("Generate Table of Contents", value=True)
+    with outer_col3:
+        class_rows = st.number_input(
+            "Class amount", min_value=1, step=1, key="class_rows")
 
 with st.form("Form"):
     st.subheader("Album Info")
@@ -57,11 +62,18 @@ with st.form("Form"):
     st.text_input("Bandcamp", key="bandcamp_url",
                   placeholder="Bandcamp album page")
 
+    st.subheader("Classes")
+    for i in range(1, class_rows+1):
+        st.text_input("Class", key=f"class_{i}")
+
     submitted = st.form_submit_button("Generate")
 
-# Initialize wiki_template with an empty string to ensure the text area is visible
-st.text_area(label="Template", height=500, value=st.session_state.template)
-st.button("Copy to clipboard", on_click=clipman.set(st.session_state.template))
+with st.container(border=True):
+
+    # Initialize wiki_template with an empty string to ensure the text area is visible
+    st.text_area(label="Template", height=500, value=st.session_state.template)
+    st.button("Copy to clipboard", on_click=clipman.set(
+        st.session_state.template))
 
 if submitted:
     link = st.session_state["album_url"]
@@ -90,6 +102,13 @@ if submitted:
         {"name": "bandcamp", "url": st.session_state["bandcamp_url"]}
     ]
 
-    wiki_template = run(link, reviews, members, external_links, stub, toc)
+    classes = []
+
+    for i in range(1, class_rows+1):
+        if st.session_state[f"class_{i}"]:
+            classes.append(st.session_state[f"class_{i}"])
+
+    wiki_template = run(link, reviews, members,
+                        external_links, stub, toc, classes)
     form_callback(wiki_template)
     st.rerun()
