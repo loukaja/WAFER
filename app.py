@@ -2,8 +2,6 @@ import streamlit as st
 import clipman
 from run import run
 
-clipman.init()
-
 st.title("Welcome to WAFER!")
 
 if "template" not in st.session_state:
@@ -12,7 +10,9 @@ if "template" not in st.session_state:
 
 def form_callback(text):
     st.session_state.template = text
-
+    clipman.init()
+    clipman.set(st.session_state.template)
+    st.write("Copied to clipboard!")
 
 with st.container(border=True):
     st.subheader("Form options")
@@ -72,8 +72,6 @@ with st.container(border=True):
 
     # Initialize wiki_template with an empty string to ensure the text area is visible
     st.text_area(label="Template", height=500, value=st.session_state.template)
-    st.button("Copy to clipboard", on_click=clipman.set(
-        st.session_state.template))
 
 if submitted:
     link = st.session_state["album_url"]
