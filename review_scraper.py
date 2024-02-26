@@ -4,6 +4,8 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import constants as c
+import platform
+import re
 
 
 def get_domain(review_url):
@@ -58,9 +60,13 @@ def create_album_rating(review):
     else:
         site = split_domain[0].title() if len(
             split_domain) == 2 else split_domain[1].title()
+    
+    if site == 'Angrymetalguy':
+        site = 'Angry Metal Guy'
 
-    max_rating = 5 if review['domain'] in [
-        'kaaoszine.fi', 'www.soundi.fi', 'www.inferno.fi'] else 10
+    max_5 = ['kaaoszine.fi', 'www.soundi.fi', 'www.inferno.fi', 'www.metalsucks.net', 'www.angrymetalguy.com']
+
+    max_rating = 5 if review['domain'] in max_5 else 10
     if not review['rating']:
         return None
     rating = f"* [[{site}]]: {{{{Arvostelutähdet|{review['rating']}|{max_rating}}}}}"
@@ -85,6 +91,9 @@ def get_review_title(soup, domain):
         title = soup.find('h1').get_text()
     elif domain == 'www.inferno.fi':
         title = soup.find('h1').get_text()
+    elif domain == 'www.angrymetalguy.com':
+        title = soup.find('title').get_text()
+        title = title.split('Review')[0].strip()
 
     return title
 
@@ -109,39 +118,26 @@ def get_review_author(soup, domain):
         author = soup.find('span', class_='author').find('a').get_text()
     elif domain == 'www.inferno.fi':
         author = soup.find('a', {'rel': 'author'}).get_text()
+    elif domain == 'www.angrymetalguy.com':
+        author = soup.find('span', class_='uppercase authorname').get_text()
+        author = author.title()
 
-    split = author.split()
-    author = f"{split[1]}, {split[0]}"
+    # If "real" name, try to split is so we can have it in Lastname, Firstname format
+    if domain != 'www.angrymetalguy.com':
+        split = author.split()
+        author = f"{split[1]}, {split[0]}"
 
     return author
 
 
 def get_review_date(soup, domain):
-    if domain == 'kaaoszine.fi':
-        author_and_date_div = soup.find('div', class_='author-and-date')
-        date = author_and_date_div.get_text().split('-')[-1].strip()
-    elif domain == 'www.soundi.fi':
-        date_and_author = soup.find_all('div', class_='text-gray-400')
-        release_date = date_and_author[0].get_text().split()[-1][:-1]
-        month, year = release_date.split('/')
-        date = c.KK_BASE[int(month)] + ' ' + year
-    elif domain == 'metalliluola.fi':
-        date = soup.find(
-            'time', class_='entry-date updated td-module-date').get_text()
-    elif domain == 'blabbermouth.net':
+    if domain == 'www.inferno.fi':
+        date = soup.find('div', class_='pr-2 pl-1 text-gray-400').get_text()
+    else:
         meta_tag = soup.find('meta', property='article:published_time')
         dt = meta_tag['content']
         dt = dt.split('T')[0]
-        year, month, day = dt.split('-')
-        date = f"{day}.{month}.{year}"
-    elif domain == 'metalinjection.net':
-        date_time = soup.find('time')['datetime']
-        date = datetime.strptime(date_time, '%Y-%m-%d').strftime('%#d.%#m.%Y')
-    elif domain == 'www.metalsucks.net':
-        date_time = soup.find('time')['datetime']
-        date = datetime.strptime(date_time, '%Y-%m-%d').strftime('%#d.%#m.%Y')
-    elif domain == 'www.inferno.fi':
-        date = soup.find('div', class_='pr-2 pl-1 text-gray-400').get_text()
+        date = convert_date(dt)
 
     return date
 
@@ -181,6 +177,14 @@ def get_review_rating(soup, domain):
         rating = lazy_src_url.split('/')[-1].split('.')[0]
         if '-' in rating:
             rating = rating.replace('-', '.')
+    elif domain == 'www.angrymetalguy.com':
+        rating_text = soup.find('strong', string=re.compile('^Rating'))
+        rating = rating_text.next_sibling.strip()
+
+        if rating[0] == ':':
+            rating = rating.split(':')[1].split('/')[0].strip()
+        else:
+            rating = rating.split('/')[0].strip()
 
     return rating
 
@@ -190,8 +194,9 @@ def create_reference(review):
     # Remove leading zeros from day and month
     current_date = current_date.replace('.0', '.').lstrip('0')
     domain = review['domain']
+    english = ['blabbermouth.net', 'metalinjection.net', 'www.metalsucks.net', 'www.angrymetalguy.com']
 
-    language = " | Kieli = {{en}}" if domain == 'blabbermouth.net' or domain == 'metalinjection.net' else ""
+    language = " | Kieli = {{en}}" if domain in english else ""
     date = f"Ajankohta = {review['date']}"
 
     reference = (f"<ref>{{{{Verkkoviite | Osoite = {review['url']} | Nimeke = {review['title']}"
@@ -199,6 +204,12 @@ def create_reference(review):
                  f"{date} | Viitattu = {current_date}{language} }}}}</ref>")
 
     return reference
+
+
+def convert_date(date):
+    if platform.system() == 'Windows':
+        return datetime.strptime(date, '%Y-%m-%d').strftime('%#d.%#m.%Y')
+    return datetime.strptime(date, '%Y-%m-%d').strftime('%-d.%-m.%Y')
 
 
 if __name__ == '__main__':
