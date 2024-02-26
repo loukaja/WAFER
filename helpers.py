@@ -348,7 +348,7 @@ def fill_album_info_box(url_id, toc):
     # Loop through each line, replace with the new content, and update the contents variable
     keywords = ['artisti', 'edellinen', 'seuraava']
     for i, line_to_modify in enumerate(lines_to_modify):
-        if any(keyword in line_to_modify for keyword in keywords):
+        if any(keyword in line_to_modify for keyword in keywords) and new_content[i]:
             contents = contents.replace(
                 line_to_modify, f'{line_to_modify}[[{new_content[i]}]]')
         else:
