@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import constants as c
 import platform
 import re
+from fake_useragent import UserAgent
 
 
 def get_domain(review_url):
@@ -16,12 +17,14 @@ def get_domain(review_url):
 
 def get_review(review_url):
     domain = get_domain(review_url)
+    ua = UserAgent()
+    headers = {'user-agent': f'{ua.random}'}
 
     if domain not in c.SUPPORTED_DOMAINS:
         return None
 
     try:
-        response = requests.get(url=review_url, timeout=(3, 5))
+        response = requests.get(url=review_url, headers=headers, timeout=(3, 5))
         soup = BeautifulSoup(response.text, 'html.parser')
     except requests.exceptions.Timeout:
         sys.exit("The request timed out")
@@ -63,6 +66,8 @@ def create_album_rating(review):
     
     if site == 'Angrymetalguy':
         site = 'Angry Metal Guy'
+    elif site == 'Distortedsoundmag':
+        site = 'Distorted Sound Magazine'
 
     max_5 = ['kaaoszine.fi', 'www.soundi.fi', 'www.inferno.fi', 'www.metalsucks.net', 'www.angrymetalguy.com']
 
@@ -94,6 +99,8 @@ def get_review_title(soup, domain):
     elif domain == 'www.angrymetalguy.com':
         title = soup.find('title').get_text()
         title = title.split('Review')[0].strip()
+    elif domain == 'distortedsoundmag.com':
+        title = ' - '.join([item.strip().title() for item in soup.find('title').get_text().split('-')[:2]])
 
     return title
 
@@ -121,6 +128,9 @@ def get_review_author(soup, domain):
     elif domain == 'www.angrymetalguy.com':
         author = soup.find('span', class_='uppercase authorname').get_text()
         author = author.title()
+    elif domain == 'distortedsoundmag.com':
+        author_span = soup.find('span', class_='cm-author cm-vcard')
+        author = author_span.find('a').get_text()
 
     # If "real" name, try to split is so we can have it in Lastname, Firstname format
     if domain != 'www.angrymetalguy.com':
@@ -185,6 +195,13 @@ def get_review_rating(soup, domain):
             rating = rating.split(':')[1].split('/')[0].strip()
         else:
             rating = rating.split('/')[0].strip()
+    elif domain == 'distortedsoundmag.com':
+        rating_b = soup.find('b', string=re.compile('^Rating'))
+
+        if rating_b:
+            rating = rating_b.next_sibling.get_text().split('/')[0]
+        else:
+            rating = soup.find('strong', string=re.compile('^Rating')).get_text().split()[1].split('/')[0]
 
     return rating
 
@@ -194,7 +211,8 @@ def create_reference(review):
     # Remove leading zeros from day and month
     current_date = current_date.replace('.0', '.').lstrip('0')
     domain = review['domain']
-    english = ['blabbermouth.net', 'metalinjection.net', 'www.metalsucks.net', 'www.angrymetalguy.com']
+    english = ['blabbermouth.net', 'metalinjection.net', 'www.metalsucks.net',
+               'www.angrymetalguy.com', 'distortedsoundmag.com']
 
     language = " | Kieli = {{en}}" if domain in english else ""
     date = f"Ajankohta = {review['date']}"
