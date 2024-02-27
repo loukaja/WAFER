@@ -68,8 +68,11 @@ def create_album_rating(review):
         site = 'Angry Metal Guy'
     elif site == 'Distortedsoundmag':
         site = 'Distorted Sound Magazine'
+    elif site == 'Loudersound':
+        site = 'Metal Hammer'
 
-    max_5 = ['kaaoszine.fi', 'www.soundi.fi', 'www.inferno.fi', 'www.metalsucks.net', 'www.angrymetalguy.com']
+    max_5 = ['kaaoszine.fi', 'www.soundi.fi', 'www.inferno.fi', 'www.metalsucks.net',
+             'www.angrymetalguy.com', 'www.loudersound.com']
 
     max_rating = 5 if review['domain'] in max_5 else 10
     if not review['rating']:
@@ -101,6 +104,8 @@ def get_review_title(soup, domain):
         title = title.split('Review')[0].strip()
     elif domain == 'distortedsoundmag.com':
         title = ' - '.join([item.strip().title() for item in soup.find('title').get_text().split('-')[:2]])
+    elif domain == 'www.loudersound.com':
+        title = soup.find('title').get_text().split('|')[0]
 
     return title
 
@@ -130,6 +135,9 @@ def get_review_author(soup, domain):
         author = author.title()
     elif domain == 'distortedsoundmag.com':
         author_span = soup.find('span', class_='cm-author cm-vcard')
+        author = author_span.find('a').get_text()
+    elif domain == 'www.loudersound.com':
+        author_span = soup.find('span', class_='author-byline__author-name')
         author = author_span.find('a').get_text()
 
     # If "real" name, try to split is so we can have it in Lastname, Firstname format
@@ -202,6 +210,10 @@ def get_review_rating(soup, domain):
             rating = rating_b.next_sibling.get_text().split('/')[0]
         else:
             rating = soup.find('strong', string=re.compile('^Rating')).get_text().split()[1].split('/')[0]
+    elif domain == 'www.loudersound.com':
+        rating_span = soup.find('span', class_='chunk rating')
+        rating = rating_span.get('aria-label')
+        rating = re.findall(r'\d+', rating)[0]
 
     return rating
 
@@ -212,7 +224,7 @@ def create_reference(review):
     current_date = current_date.replace('.0', '.').lstrip('0')
     domain = review['domain']
     english = ['blabbermouth.net', 'metalinjection.net', 'www.metalsucks.net',
-               'www.angrymetalguy.com', 'distortedsoundmag.com']
+               'www.angrymetalguy.com', 'distortedsoundmag.com', 'www.loudersound.com']
 
     language = " | Kieli = {{en}}" if domain in english else ""
     date = f"Ajankohta = {review['date']}"
