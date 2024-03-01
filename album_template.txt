@@ -8,7 +8,8 @@
  | julkaistu         = 
  | formaatti         = 
  | tuottaja          = 
- | nauhoitettu       = 
+ | äänitetty         = 
+ | studio            = 
  | genre             = 
  | minuutit          = 
  | sekunnit          = 

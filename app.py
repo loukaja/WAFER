@@ -12,7 +12,6 @@ def form_callback(text):
     st.session_state.template = text
     clipman.init()
     clipman.set(st.session_state.template)
-    st.write("Copied to clipboard!")
 
 with st.container(border=True):
     st.subheader("Form options")
@@ -29,11 +28,17 @@ with st.container(border=True):
     with outer_col3:
         class_rows = st.number_input(
             "Class amount", min_value=1, step=1, key="class_rows")
+        st.selectbox("Album type", ('Studio', 'Live', 'EP', 'Single', 'Demo'), index=None, placeholder="Choose album type...", key="album_type")
 
 with st.form("Form"):
     st.subheader("Album Info")
     st.text_input("Album URL", key="album_url",
                   placeholder="https://tidal.com/browse/album/...")
+    
+    st.text_input("Producer", key="producer", help="Who produced the album")
+    st.text_input("Recorded", key="recorded", help="When the album was recorded")
+    st.text_input("Studio", key="studio", help="Where the album was produced/mixed etc")
+    st.text_input("Genre", key="genre", help="Enter album genre, separate multiple genres with comma")
 
     if review_rows > 0:
         st.subheader(
@@ -74,13 +79,24 @@ with st.container(border=True):
     st.text_area(label="Template", height=500, value=st.session_state.template)
 
 if submitted:
-    link = st.session_state["album_url"]
+    album_info = {}
+
+    album_info['link'] = st.session_state["album_url"]
+    album_info['type'] = st.session_state["album_type"]
+    album_info['recorded'] = st.session_state["recorded"]
+    album_info['producer'] = st.session_state["producer"]
+    album_info['studio'] = st.session_state["studio"]
+    album_info['genres'] = st.session_state["genre"].split(',')
+    album_info['toc'] = toc
+    album_info['stub'] = stub
 
     reviews = []
 
     for i in range(1, review_rows+1):
         if st.session_state[f"review_{i}"]:
             reviews.append(st.session_state[f"review_{i}"])
+
+    album_info['reviews'] = reviews
 
     members = []
 
@@ -93,6 +109,8 @@ if submitted:
                 "instruments": instrument
             })
 
+    album_info['members'] = members
+
     external_links = [
         {"name": "discogs", "url": st.session_state["discogs_url"]},
         {"name": "metal_archives",
@@ -100,13 +118,16 @@ if submitted:
         {"name": "bandcamp", "url": st.session_state["bandcamp_url"]}
     ]
 
+    album_info['external_links'] = external_links
+
     classes = []
 
     for i in range(1, class_rows+1):
         if st.session_state[f"class_{i}"]:
             classes.append(st.session_state[f"class_{i}"])
 
-    wiki_template = run(link, reviews, members,
-                        external_links, stub, toc, classes)
+    album_info['classes'] = classes
+
+    wiki_template = run(album_info)
     form_callback(wiki_template)
     st.rerun()

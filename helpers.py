@@ -291,7 +291,7 @@ def get_album_index(current_album):
     return None
 
 
-def fill_album_info_box(url_id, toc):
+def fill_album_info_box(album_info):
     """Function that writes the information to the created file
 
     Args:
@@ -300,6 +300,9 @@ def fill_album_info_box(url_id, toc):
     Returns:
         list: A list with the file path and the album data
     """
+    # Used to take url_id, toc, album_type, genres
+    # Grab the ID from the album link
+    url_id = album_info['link'].split('/')[-1]
 
     # Get artist and album name, duration, release date and previous album title and release date
     album_data = get_release_information(url_id)
@@ -309,6 +312,14 @@ def fill_album_info_box(url_id, toc):
     # Create new file from template
     file = construct_path(album_data['artist'], album_data['album_title'])
 
+    genres = album_info['genres']
+
+    if genres:
+        for i, genre in enumerate(genres):
+            genres[i] = f"[[{genre.strip()}]]"
+
+    gen_string = ', '.join(genres) if len(genres) > 1 else genres[0]   
+
     # Open the txt file
     with open(file, 'r', encoding='utf-8') as f:
         # Read the contents of the file
@@ -317,8 +328,13 @@ def fill_album_info_box(url_id, toc):
     # Define the lines we want to modify and the new content to replace them with
     lines_to_modify = [
         ' | levy              = ',
+        ' | tyyppi            = ',
         ' | artisti           = ',
         ' | julkaistu         = ',
+        ' | tuottaja          = ',
+        ' | äänitetty         = ',
+        ' | studio            = ',
+        ' | genre             = ',
         ' | minuutit          = ',
         ' | sekunnit          = ',
         ' | tämä              = ',
@@ -332,8 +348,13 @@ def fill_album_info_box(url_id, toc):
 
     new_content = [
         album_data['album_title'],
+        album_info['type'].lower() if album_info['type'] else '',
         album_data['artist'],
         album_data['full_date'],
+        album_info['producer'] if album_info['producer'] else '',
+        album_info['recorded'] if album_info['recorded'] else '',
+        album_info['studio'] if album_info['studio'] else '',
+        gen_string,
         str(album_data['total_min']),
         str(album_data['total_sec']).zfill(2),
         album_data['album_title'],
@@ -342,7 +363,7 @@ def fill_album_info_box(url_id, toc):
         previous_album['year'] if previous_album else '',
         next_album['title'] if next_album else '',
         next_album['year'] if next_album else '',
-        '__NOTOC__' if not toc else ''
+        '__NOTOC__' if not album_info['toc'] else ''
     ]
 
     # Loop through each line, replace with the new content, and update the contents variable
@@ -362,7 +383,7 @@ def fill_album_info_box(url_id, toc):
     return [file, album_data]
 
 
-def fill_tracklist(url_id, file_and_album):
+def fill_tracklist(url, file, album):
     """Function that writes the track list information to the file
 
     Args:
@@ -370,20 +391,20 @@ def fill_tracklist(url_id, file_and_album):
         file_and_album (list): File path and album data
     """
 
+    # Grab the ID from the album link
+    url_id = url.split('/')[-1]
+
     # Grab tracklist
     tracks_url = f'https://openapi.tidal.com/albums/{url_id}/items?countryCode=US&offset=0&limit=30'
 
     tracklist = get_tracklist(tracks_url)
-
-    file = file_and_album[0]
-    album_data = file_and_album[1]
 
     # Append the start of the tracklist module to the file
     with open(file, 'a', encoding='utf-8') as f:
         f.write('\n\n== Kappaleet ==')
         f.write('\n{{Kappalelista')
         f.write(
-            f'\n | kokonaiskesto    = {album_data["total_min"]}.{album_data["total_sec"]:02d}')
+            f'\n | kokonaiskesto    = {album["total_min"]}.{album["total_sec"]:02d}')
 
     # Then the actual tracks one by one
     for track in tracklist:
@@ -402,7 +423,7 @@ def fill_tracklist(url_id, file_and_album):
         f.write('}}\n')
 
 
-def fill_lineup(file_and_album, members):
+def fill_lineup(file, members):
     """Function that writes lineup parts to the output file
 
     Args:
@@ -410,7 +431,6 @@ def fill_lineup(file_and_album, members):
     """
 
     # Add lineup parts
-    file = file_and_album[0]
 
     with open(file, 'a', encoding='utf-8') as f:
         f.write('\n== Kokoonpano ==\n')
@@ -430,8 +450,7 @@ def fill_lineup(file_and_album, members):
                 f.write(f"* [[{member['name']}]] - {instruments_str}\n")
 
 
-def add_reviews(reviews, file_and_album):
-    file = file_and_album[0]
+def add_reviews(reviews, file):
 
     with open(file, 'a', encoding='utf-8') as f:
         f.write('\n')
@@ -444,8 +463,7 @@ def add_reviews(reviews, file_and_album):
                 f.write(r + '\n')
 
 
-def add_references(file_and_album):
-    file = file_and_album[0]
+def add_references(file):
     with open(file, 'a', encoding='utf-8') as f:
         f.write('\n== Lähteet ==\n')
         f.write('{{viitteet}}\n')
@@ -466,10 +484,8 @@ def get_reviews(review_list):
     return reviews
 
 
-def add_external_links(external_links, file_and_album):
-    file = file_and_album[0]
-    album_data = file_and_album[1]
-    album = album_data['album_title']
+def add_external_links(external_links, file, album):
+    album = album['album_title']
 
     with open(file, 'a', encoding='utf-8') as f:
         f.write('\n== Aiheesta muualla ==\n')
@@ -496,8 +512,7 @@ def add_external_links(external_links, file_and_album):
             f.write(f"{link}\n")
 
 
-def export_wiki_template(file_and_album):
-    file = file_and_album[0]
+def export_wiki_template(file):
     with open(file, 'r', encoding='utf-8') as f:
         # Read the contents of the file
         contents = f.read()
@@ -505,15 +520,14 @@ def export_wiki_template(file_and_album):
     return contents
 
 
-def add_stub(file_and_album):
-    file = file_and_album[0]
+def add_stub(file):
     with open(file, 'a', encoding='utf-8') as f:
         f.write(f"\n{{{{Tynkä/Albumi}}}}\n")
 
 
-def add_classes(file_and_album, classes):
-    file = file_and_album[0]
-
+def add_classes(file, classes):
+    with open(file, 'a', encoding="utf-8") as f:
+        f.write("\n")
     for class_ in classes:
         with open(file, 'a', encoding="utf-8") as f:
-            f.write(f"\n[[Luokka:{class_}]]\n")
+            f.write(f"[[Luokka:{class_}]]\n")
